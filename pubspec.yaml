@@ -1,0 +1,150 @@
+name: integralpos
+description: "IntegralPOS - Point de vente intelligent"
+publish_to: 'none'
+
+version: 1.0.0+6
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI Framework
+  forui: ^0.16.0
+
+  # Icons
+  fluentui_icons: ^1.0.0
+
+  # State Management
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
+
+  # HTTP Client
+  dio: ^5.7.0
+
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Secure Storage
+  flutter_secure_storage: ^10.0.0-beta.5
+
+  # Device Info
+  device_info_plus: ^12.1.0
+
+  # PDF Generation
+  pdf: ^3.11.1
+
+  # Paths
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+  # HTTP
+  http: ^1.2.2
+
+  # Preferences
+  shared_preferences: ^2.3.3
+
+  # UUID
+  uuid: ^4.5.1
+
+  # Intl (pinned by flutter_localizations)
+  intl: any
+
+  # Crypto
+  crypto: ^3.0.6
+
+  # Share
+  share_plus: ^12.0.0
+
+  # Image Picker
+  image_picker: ^1.1.2
+
+  # Printing - For thermal and network printers
+  printing: ^5.13.3
+  flutter_thermal_printer: ^1.2.4
+
+  # Audio playback
+  audioplayers: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Riverpod code gen
+  riverpod_generator: ^3.0.3
+  build_runner: ^2.4.13
+
+  # Testing
+  mocktail: ^1.0.4
+
+  # Splash Screen
+  flutter_native_splash: ^2.4.1
+
+  # App Icons
+  flutter_launcher_icons: ^0.14.4
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/placeholders/
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+
+# Configuration du Splash Screen
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/images/IntegralPOS.jpg
+  android: true
+  ios: true
+  web: true
+
+# Configuration des icônes de l'application
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/IntegralPOS.jpg"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/images/IntegralPOS.jpg"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"

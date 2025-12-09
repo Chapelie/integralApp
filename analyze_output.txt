@@ -1,0 +1,35 @@
+Checking Dart SDK version... 
+Downloading Dart SDK from Flutter engine ... 
+Rename-Item : Le processus ne peut pas acc‚der au fichier, car il est utilis‚ par un autre processus.
+Au caractŠre C:\Users\clems\flutter\bin\internal\update_dart_sdk.ps1:74 : 9
++         Rename-Item $dartSdkPath "$oldDartSdkPrefix$oldDartSdkSuffix"
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (C:\Users\clems\...\cache\dart-sdk:String) [Rename-Item], IOException
+    + FullyQualifiedErrorId : RenameItemIOError,Microsoft.PowerShell.Commands.RenameItemCommand
+ 
+Error: Unable to update Dart SDK. Retrying... 
+timeout: invalid time interval â€˜/tâ€™
+Try 'timeout --help' for more information.
+Checking Dart SDK version... 
+Downloading Dart SDK from Flutter engine ... 
+Rename-Item : Le processus ne peut pas acc‚der au fichier, car il est utilis‚ par un autre processus.
+Au caractŠre C:\Users\clems\flutter\bin\internal\update_dart_sdk.ps1:74 : 9
++         Rename-Item $dartSdkPath "$oldDartSdkPrefix$oldDartSdkSuffix"
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (C:\Users\clems\...\cache\dart-sdk:String) [Rename-Item], IOException
+    + FullyQualifiedErrorId : RenameItemIOError,Microsoft.PowerShell.Commands.RenameItemCommand
+ 
+Error: Unable to update Dart SDK. Retrying... 
+timeout: invalid time interval â€˜/tâ€™
+Try 'timeout --help' for more information.
+Checking Dart SDK version... 
+Downloading Dart SDK from Flutter engine ... 
+Rename-Item : Le processus ne peut pas acc‚der au fichier, car il est utilis‚ par un autre processus.
+Au caractŠre C:\Users\clems\flutter\bin\internal\update_dart_sdk.ps1:74 : 9
++         Rename-Item $dartSdkPath "$oldDartSdkPrefix$oldDartSdkSuffix"
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : WriteError: (C:\Users\clems\...\cache\dart-sdk:String) [Rename-Item], IOException
+    + FullyQualifiedErrorId : RenameItemIOError,Microsoft.PowerShell.Commands.RenameItemCommand
+ 
+Error: Unable to update Dart SDK after 3 retries. 
+Impossible de trouver C:\Users\clems\flutter\bin\cache\engine-dart-sdk.stamp

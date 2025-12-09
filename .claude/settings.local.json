@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub:*)",
+      "Bash(mkdir:*)",
+      "Bash(dir:*)",
+      "Bash(awk:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(find:*)",
+      "Read(//c/Users/clems/AppData/Local/Pub/Cache/hosted/pub.dev/forui-0.10.0+1/lib/**)",
+      "Bash(Select-Object -First 30)",
+      "Bash(tee:*)",
+      "Bash(cat:*)",
+      "Bash(xargs:*)",
+      "Bash(python:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(for:*)",
+      "Bash(do echo \"==> $file <==\")",
+      "Bash(tail:*)",
+      "Bash(done)",
+      "Bash(Select-Object -First 100)",
+      "WebFetch(domain:forui.dev)",
+      "Read(//c/Users/clems/AppData/Local/Pub/Cache/hosted/pub.dev//**)",
+      "Bash(bash:*)",
+      "Read(//c/wsl$/Ubuntu/home/clement/Code/integralPos/backend/routes/**)",
+      "Read(//c/wsl$/Ubuntu/home/clement/Code/integralPos/backend/**)",
+      "Bash(flutter build:*)",
+      "Bash(dart run build_runner build:*)",
+      "Bash(dart run:*)",
+      "Bash(php artisan make:migration:*)",
+      "Bash(ls:*)",
+      "Read(//c/Users/clems/Desktop/Code/**)",
+      "Bash(dart analyze:*)",
+      "Bash(Select-String \"flutter_thermal_printer\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
