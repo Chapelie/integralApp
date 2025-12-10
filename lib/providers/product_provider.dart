@@ -10,8 +10,6 @@ import '../core/api_service.dart';
 import '../core/image_service.dart';
 import '../core/sync_service.dart';
 import '../core/product_service.dart';
-import '../core/stock_adjustment_service.dart';
-import '../providers/auth_provider.dart';
 
 part 'product_provider.g.dart';
 
@@ -464,18 +462,8 @@ class ProductNotifier extends _$ProductNotifier {
     try {
       print('[ProductProvider] Updating stock for product: $productId, new stock: $newStock');
       
-      // 1. Get current product to calculate adjustment
-      final product = state.products.firstWhere((p) => p.id == productId);
-      final currentStock = product.stock;
-      final adjustmentQuantity = newStock - currentStock;
-      
-      // 2. Update locally first (immediate response)
-      final updatedProduct = product.copyWith(
-        stock: newStock,
-        updatedAt: DateTime.now(),
-      );
-      
-      await _storageService.saveProduct(updatedProduct.toJson());
+      // Mettre à jour via l'API
+      final updatedProduct = await _productService.updateProductStock(productId, newStock, reason);
       
       final updatedProducts = state.products.map((p) {
         return p.id == productId ? updatedProduct : p;
@@ -491,66 +479,11 @@ class ProductNotifier extends _$ProductNotifier {
       if (state.searchQuery != null && state.searchQuery!.isNotEmpty) {
         searchProducts(state.searchQuery!);
       }
-
-      print('[ProductProvider] Stock updated locally for product: $productId');
-      
-      // 3. Create stock adjustment via API in background (non-blocking)
-      if (adjustmentQuantity != 0) {
-        _createStockAdjustment(productId, adjustmentQuantity, reason).catchError((e) {
-          print('[ProductProvider] Stock adjustment error: $e');
-          // Stock is already updated locally
-        });
-      }
-      
-      // 4. Also update via ProductService for backward compatibility
-      _productService.updateProductStock(productId, newStock, reason).catchError((e) {
-        print('[ProductProvider] ProductService update error: $e');
-      });
       
       print('[ProductProvider] Stock updated successfully for product: $productId');
     } catch (e) {
       print('[ProductProvider] Error updating stock: $e');
       state = state.copyWith(error: e.toString());
-    }
-  }
-
-  /// Génère un SKU simple basé sur le nom et un suffixe horodaté
-  String _generateSku(String name) {
-    final normalized = name
-        .toUpperCase()
-        .replaceAll(RegExp(r'[^A-Z0-9]'), '-')
-        .replaceAll(RegExp('-+'), '-')
-        .trim();
-    final base = normalized.isEmpty ? 'PROD' : normalized;
-    final shortBase = base.length > 12 ? base.substring(0, 12) : base;
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    final suffix = timestamp.substring(timestamp.length - 4);
-    return '$shortBase-$suffix';
-  }
-
-  /// Create stock adjustment via API (background)
-  Future<void> _createStockAdjustment(String productId, int quantity, String reason) async {
-    try {
-      final stockAdjustmentService = StockAdjustmentService();
-      final authState = ref.read(authProvider);
-      final userId = authState.user?.id ?? 'unknown';
-      
-      await stockAdjustmentService.createAdjustment(
-        items: [
-          StockAdjustmentItem(
-            productId: productId,
-            quantity: quantity,
-            reason: reason,
-          ),
-        ],
-        notes: reason,
-        userId: userId,
-      );
-      
-      print('[ProductProvider] Stock adjustment created: $productId, quantity: $quantity');
-    } catch (e) {
-      print('[ProductProvider] Error creating stock adjustment: $e');
-      // Silent fail - stock is already updated locally
     }
   }
 
@@ -578,9 +511,9 @@ class ProductNotifier extends _$ProductNotifier {
   /// Créer un nouveau produit
   Future<void> createProduct({
     required String name,
-    String? sku,
+    required String sku,
     String? description,
-    double? price, // Prix optionnel (peut être null pour produits sans prix)
+    required double price,
     required int stock,
     int? minStock,
     int? maxStock,
@@ -593,7 +526,7 @@ class ProductNotifier extends _$ProductNotifier {
     print('[ProductProvider] ===== DÉBUT createProduct =====');
     print('[ProductProvider] Paramètres reçus:');
     print('[ProductProvider]   - Nom: $name');
-      print('[ProductProvider]   - SKU: ${sku ?? "(auto)"}');
+    print('[ProductProvider]   - SKU: $sku');
     print('[ProductProvider]   - Prix: $price');
     print('[ProductProvider]   - Stock: $stock');
     print('[ProductProvider]   - Catégorie ID: $categoryId');
@@ -603,14 +536,10 @@ class ProductNotifier extends _$ProductNotifier {
 
     try {
       print('[ProductProvider] Création de l\'objet Product...');
-      final generatedSku = (sku != null && sku.trim().isNotEmpty)
-          ? sku.trim()
-          : _generateSku(name);
-
       final product = Product(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
-        sku: generatedSku,
+        sku: sku,
         description: description,
         price: price,
         stock: stock,
@@ -626,7 +555,6 @@ class ProductNotifier extends _$ProductNotifier {
       );
 
       print('[ProductProvider] Produit créé localement - ID temporaire: ${product.id}');
-      print('[ProductProvider] SKU utilisé: ${product.sku}');
       print('[ProductProvider] Appel ProductService.createProduct()...');
 
       // Créer via l'API

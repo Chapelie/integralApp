@@ -8,7 +8,6 @@ import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
-import '../../core/beep_service.dart';
 import '../../widgets/main_layout.dart';
 import '../../core/image_service.dart';
 
@@ -27,6 +26,7 @@ class ProductFormPage extends ConsumerStatefulWidget {
 class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _skuController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
@@ -47,6 +47,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     super.initState();
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
+      _skuController.text = widget.product!.sku;
       _descriptionController.text = widget.product!.description ?? '';
       _priceController.text = widget.product!.price.toString();
       _stockController.text = widget.product!.stock.toString();
@@ -70,6 +71,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _skuController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
     _stockController.dispose();
@@ -138,9 +140,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         title: const Text('Erreur'),
         content: Text(message),
         actions: [
-          FButton(
-            onPress: () => Navigator.of(context).pop(),
-            style: FButtonStyle.primary(),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
           ),
         ],
@@ -200,12 +201,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
           ),
         ),
         actions: [
-          FButton(
-            onPress: () => Navigator.of(dialogContext).pop(),
-            style: FButtonStyle.outline(),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Annuler'),
           ),
-          const SizedBox(width: 8),
           FButton(
             onPress: () async {
               if (!formKey.currentState!.validate()) {
@@ -324,17 +323,23 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      if (isEditing) ...[
-                        TextFormField(
-                          initialValue: widget.product?.sku,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'SKU (auto-généré)',
-                            border: OutlineInputBorder(),
-                          ),
+                      // SKU field
+                      TextFormField(
+                        controller: _skuController,
+                        decoration: const InputDecoration(
+                          labelText: 'SKU *',
+                          hintText: 'Ex: IPH15PRO-128',
+                          border: OutlineInputBorder(),
                         ),
-                        const SizedBox(height: 16),
-                      ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Le SKU est obligatoire';
+                          }
+                          return null;
+                        },
+                        enabled: !_isLoading,
+                      ),
+                      const SizedBox(height: 16),
 
                       // Description field
                       TextFormField(
@@ -485,41 +490,24 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          FButton(
-                            onPress: _isLoading ? null : _pickImageFromGallery,
-                            style: FButtonStyle.primary(),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.photo_library),
-                                SizedBox(width: 8),
-                                Text('Galerie'),
-                              ],
-                            ),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _pickImageFromGallery,
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Galerie'),
                           ),
-                          FButton(
-                            onPress: _isLoading ? null : _takePicture,
-                            style: FButtonStyle.primary(),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.camera_alt),
-                                SizedBox(width: 8),
-                                Text('Appareil'),
-                              ],
-                            ),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _takePicture,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Appareil'),
                           ),
                           if (_selectedImage != null || _imageUrl != null)
-                            FButton(
-                              onPress: _isLoading ? null : _removeImage,
-                              style: FButtonStyle.destructive(),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.delete),
-                                  SizedBox(width: 8),
-                                  Text('Supprimer'),
-                                ],
+                            ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _removeImage,
+                              icon: const Icon(Icons.delete),
+                              label: const Text('Supprimer'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
                               ),
                             ),
                         ],
@@ -715,7 +703,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
     try {
       final name = _nameController.text.trim();
-      final sku = widget.product != null ? widget.product!.sku : null;
+      final sku = _skuController.text.trim();
       final description = _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim();
@@ -735,7 +723,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
       print('═══════════════════════════════════════════════════════');
       print('[ProductFormPage] 📝 Données du produit à créer:');
       print('  - Nom: $name');
-      print('  - SKU: ${sku ?? "(auto)"}');
+      print('  - SKU: $sku');
       print('  - Prix: $price');
       print('  - Stock: $stock');
       print('  - Catégorie ID: $_selectedCategoryId');
@@ -769,10 +757,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
           imageUrl: imageUrl,
         );
       } else {
-        // Create new product (SKU auto-généré côté provider)
+        // Create new product
         await ref.read(productProvider.notifier).createProduct(
           name: name,
-          sku: null,
+          sku: sku,
           description: description,
           price: price,
           stock: stock,
@@ -785,9 +773,6 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
           imageUrl: imageUrl,
         );
       }
-
-      // Play success beep
-      BeepService().playSuccess();
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -803,9 +788,6 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         );
       }
     } catch (e) {
-      // Play error beep
-      BeepService().playError();
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

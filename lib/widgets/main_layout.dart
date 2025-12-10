@@ -3,10 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:forui/forui.dart';
 import '../core/responsive_helper.dart';
 import '../features/pos/widgets/sidebar.dart';
 import '../features/pos/widgets/hamburger_menu.dart';
-import '../providers/navigation_provider.dart';
+import '../providers/sidebar_provider.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
@@ -27,23 +28,18 @@ class MainLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDesktop = Responsive.isDesktop(context);
-    // Obtenir la route actuelle depuis le provider si disponible, sinon utiliser celle passée en paramètre
-    final navigationState = ref.watch(navigationProvider);
-    final activeRoute = navigationState.currentRoute.path;
 
     if (isDesktop) {
       // Desktop with fixed sidebar
-      final theme = Theme.of(context);
       return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: appBar,
         body: Row(
           children: [
             Sidebar(
-              currentRoute: activeRoute,
-              onNavigate: (route) => _handleNavigation(context, ref, route),
+              currentRoute: currentRoute,
+              onNavigate: (route) => _handleNavigation(context, route),
             ),
-            Expanded(child: child),
+            Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 300), child: child)),
           ],
         ),
         floatingActionButton: floatingActionButton,
@@ -51,13 +47,11 @@ class MainLayout extends ConsumerWidget {
       );
     } else {
       // Mobile with drawer + universal hamburger
-      final theme = Theme.of(context);
       return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: _buildMobileAppBar(context),
         drawer: HamburgerMenu(
-          currentRoute: activeRoute,
-          onNavigate: (route) => _handleNavigation(context, ref, route),
+          currentRoute: currentRoute,
+          onNavigate: (route) => _handleNavigation(context, route),
         ),
         body: child,
         floatingActionButton: floatingActionButton,
@@ -69,10 +63,7 @@ class MainLayout extends ConsumerWidget {
   PreferredSizeWidget? _buildMobileAppBar(BuildContext context) {
     if (appBar != null) return appBar; // page provided its own AppBar
     // Provide a minimal AppBar with hamburger as default on mobile
-    final theme = Theme.of(context);
     return AppBar(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      surfaceTintColor: Colors.transparent, // Évite les couleurs qui se chevauchent
       leading: Builder(
         builder: (ctx) => IconButton(
           icon: const Icon(Icons.menu),
@@ -84,16 +75,57 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  void _handleNavigation(BuildContext context, WidgetRef ref, String route) {
+  void _handleNavigation(BuildContext context, String route) {
     if (route == currentRoute) return;
-
-    // Met à jour l'état de navigation (IndexedStack)
-    ref.read(navigationProvider.notifier).navigateToPath(route);
-
-    // Assure un vrai changement de page même depuis une page "hors shell" (ex: formulaires)
-    final currentName = ModalRoute.of(context)?.settings.name;
-    if (currentName != route) {
-      Navigator.of(context).pushReplacementNamed(route);
+    switch (route) {
+      case '/pos':
+        Navigator.of(context).pushReplacementNamed('/pos');
+        break;
+      case '/products':
+        Navigator.of(context).pushReplacementNamed('/products');
+        break;
+      case '/inventory':
+        Navigator.of(context).pushReplacementNamed('/inventory');
+        break;
+      case '/customers':
+        Navigator.of(context).pushReplacementNamed('/customers');
+        break;
+      case '/employees':
+        Navigator.of(context).pushReplacementNamed('/employees');
+        break;
+      case '/cash-register':
+        Navigator.of(context).pushReplacementNamed('/cash-register');
+        break;
+      case '/reports':
+        Navigator.of(context).pushReplacementNamed('/reports');
+        break;
+      case '/accounting':
+        Navigator.of(context).pushReplacementNamed('/accounting');
+        break;
+      case '/settings':
+        Navigator.of(context).pushReplacementNamed('/settings');
+        break;
+      case '/tables':
+        Navigator.of(context).pushReplacementNamed('/tables');
+        break;
+      case '/waiters':
+        Navigator.of(context).pushReplacementNamed('/waiters');
+        break;
+      case '/kitchen':
+        Navigator.of(context).pushReplacementNamed('/kitchen');
+        break;
+      case '/tabs':
+        Navigator.of(context).pushReplacementNamed('/tabs');
+        break;
+      case '/credit-notes':
+        Navigator.of(context).pushReplacementNamed('/credit-notes');
+        break;
+      case '/receipts':
+        Navigator.of(context).pushReplacementNamed('/receipts');
+        break;
+      default:
+        Navigator.of(context).pushReplacementNamed(route);
+        break;
     }
   }
 }

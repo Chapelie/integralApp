@@ -1,22 +1,24 @@
 // lib/features/pos/payment_page.dart
-// Page de paiement complète avec toutes les fonctionnalités
+// Page de paiement complète avec génération de reçu
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/sales_provider.dart';
 import '../../providers/cash_register_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/customer_provider.dart';
-import '../../models/customer.dart';
+import '../../providers/credit_note_provider.dart';
 import '../../core/receipt_service.dart';
-import '../../core/device_service.dart';
 import '../../core/beep_service.dart';
+import '../../core/device_service.dart';
+import '../../core/credit_note_service.dart';
 import '../../widgets/pdf_preview_page.dart';
-import '../../core/responsive_helper.dart';
 
 enum PaymentMethod {
   cash,
@@ -26,11 +28,11 @@ enum PaymentMethod {
 }
 
 class PaymentPage extends ConsumerStatefulWidget {
-  final double total;
+  final double? totalToPay; // Total à payer (peut être différent du total du panier si c'est pour une addition)
 
   const PaymentPage({
     super.key,
-    required this.total,
+    this.totalToPay,
   });
 
   @override
@@ -40,31 +42,19 @@ class PaymentPage extends ConsumerStatefulWidget {
 class _PaymentPageState extends ConsumerState<PaymentPage> {
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _changeController = TextEditingController();
   bool _isProcessing = false;
+  bool _createCreditNote = false; // Option pour créer un avoir au lieu de rendre la monnaie (non automatique)
 
   @override
   void initState() {
     super.initState();
-    // Ne pas pré-remplir le montant reçu - c'est l'argent donné par le client
     _amountController.text = '';
-    _updateChange();
-    _amountController.addListener(_updateChange);
   }
 
   @override
   void dispose() {
-    _amountController.removeListener(_updateChange);
     _amountController.dispose();
-    _changeController.dispose();
     super.dispose();
-  }
-
-  void _updateChange() {
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
-    final change = amount - widget.total;
-    _changeController.text = change > 0 ? change.toStringAsFixed(2) : '0.00';
-    setState(() {});
   }
 
   String _formatCurrency(double amount) {
@@ -76,119 +66,89 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     return formatter.format(amount);
   }
 
+  double get _totalToPay {
+    if (widget.totalToPay != null) {
+      return widget.totalToPay!;
+    }
+    final cartState = ref.read(cartProvider);
+    return cartState.total;
+  }
+
+  double get _change {
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    return (amount - _totalToPay).clamp(0.0, double.infinity);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FTheme.of(context);
     final cartState = ref.watch(cartProvider);
-    final isDesktop = Responsive.isDesktop(context);
 
     return Scaffold(
-      backgroundColor: theme.colors.background,
       appBar: AppBar(
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
         title: const Text('Paiement'),
-        leading: _isProcessing
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-      ),
-      body: SafeArea(
-        child: isDesktop ? _buildDesktopLayout(theme, cartState) : _buildMobileLayout(theme, cartState),
-      ),
-    );
-  }
-
-  Widget _buildDesktopLayout(FThemeData theme, dynamic cartState) {
-    return Row(
-      children: [
-        // Left side: Payment details
-        Expanded(
-          flex: 2,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Payment Methods
-                _buildPaymentMethods(theme),
-                const SizedBox(height: 24),
-                // Customer Selection
-                _buildCustomerSelection(theme),
-                const SizedBox(height: 24),
-                // Amount Input with Numeric Pad
-                _buildAmountInput(theme),
-              ],
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        // Right side: Receipt preview
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colors.background,
-              border: Border(
-                left: BorderSide(color: theme.colors.border),
-              ),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _buildReceiptPreview(theme, cartState),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileLayout(FThemeData theme, dynamic cartState) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Total à payer
-          FCard.raw(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left side: Payment details
+            Expanded(
+              flex: 2,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Total à payer',
-                    style: theme.typography.sm.copyWith(
-                      color: theme.colors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _formatCurrency(widget.total),
-                    style: theme.typography.xl.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                      color: theme.colors.primary,
+                  // Payment Methods
+                  _buildPaymentMethods(theme),
+
+                  const SizedBox(height: 24),
+
+                  // Amount Input
+                  _buildAmountInput(theme),
+
+                  const SizedBox(height: 24),
+
+                  // Process Payment Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FButton(
+                      onPress: _isProcessing ? null : _processPayment,
+                      style: FButtonStyle.primary(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isProcessing)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          else
+                            const Icon(Icons.check, size: 20),
+                          const SizedBox(width: 8),
+                          Text(_isProcessing ? 'Traitement...' : 'Confirmer le paiement'),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          // Aperçu du reçu (mobile) - visible immédiatement
-          _buildReceiptPreview(theme, cartState),
-          const SizedBox(height: 24),
-          // Méthodes de paiement
-          _buildPaymentMethods(theme),
-          const SizedBox(height: 24),
-          // Sélection client
-          _buildCustomerSelection(theme),
-          const SizedBox(height: 24),
-          // Montant reçu avec clavier numérique
-          if (_selectedMethod == PaymentMethod.cash) _buildAmountInput(theme),
-          // Le bouton ✓ du clavier numérique sert à valider le paiement
-        ],
+
+            const SizedBox(width: 24),
+
+            // Right side: Receipt preview
+            Expanded(
+              flex: 1,
+              child: _buildReceiptPreview(theme, cartState),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -203,175 +163,53 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: PaymentMethod.values.map((method) {
-            final isSelected = _selectedMethod == method;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedMethod = method;
-                  if (method != PaymentMethod.cash) {
-                    _amountController.text = widget.total.toStringAsFixed(2);
-                    _updateChange();
-                  }
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? theme.colors.primary : theme.colors.muted,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? theme.colors.primary : theme.colors.border,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getPaymentIcon(method),
-                      color: isSelected ? theme.colors.primaryForeground : theme.colors.foreground,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _getPaymentLabel(method),
-                      style: theme.typography.sm.copyWith(
-                        color: isSelected ? theme.colors.primaryForeground : theme.colors.foreground,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _buildPaymentMethodButton(theme, PaymentMethod.cash, Icons.money, 'Espèces'),
+            _buildPaymentMethodButton(theme, PaymentMethod.card, Icons.credit_card, 'Carte'),
+            _buildPaymentMethodButton(theme, PaymentMethod.mobile, Icons.phone_android, 'Mobile'),
+            _buildPaymentMethodButton(theme, PaymentMethod.check, Icons.receipt, 'Chèque'),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildCustomerSelection(FThemeData theme) {
-    final customerState = ref.watch(customerProvider);
-    final cartState = ref.watch(cartProvider);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Client',
-          style: theme.typography.base.copyWith(
-            fontWeight: FontWeight.bold,
+  Widget _buildPaymentMethodButton(FThemeData theme, PaymentMethod method, IconData icon, String label) {
+    final isSelected = _selectedMethod == method;
+    return InkWell(
+      onTap: () => setState(() => _selectedMethod = method),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colors.primary : theme.colors.background,
+          border: Border.all(
+            color: isSelected ? theme.colors.primary : theme.colors.border,
+            width: 2,
           ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        const SizedBox(height: 8),
-        FButton(
-          onPress: () => _showCustomerSelection(theme),
-          style: FButtonStyle.outline(),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.person, size: 20),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  cartState.selectedCustomer?.name ?? 'Sélectionner un client',
-                  style: theme.typography.base,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? theme.colors.primaryForeground : theme.colors.foreground,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: theme.typography.sm.copyWith(
+                color: isSelected ? theme.colors.primaryForeground : theme.colors.foreground,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              if (cartState.selectedCustomer != null) ...[
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () {
-                    ref.read(cartProvider.notifier).setCustomer(null);
-                  },
-                  child: const Icon(Icons.close, size: 18),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
-  void _showCustomerSelection(FThemeData theme) {
-    final customerState = ref.read(customerProvider);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Sélectionner un client',
-          style: theme.typography.base.copyWith(fontWeight: FontWeight.bold),
-        ),
-        content: SizedBox(
-          width: 300,
-          height: 400,
-          child: customerState.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : customerState.customers.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.person_off, size: 48, color: theme.colors.mutedForeground),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Aucun client enregistré',
-                            style: theme.typography.sm.copyWith(
-                              color: theme.colors.mutedForeground,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: customerState.customers.length,
-                      itemBuilder: (context, index) {
-                        final customer = customerState.customers[index];
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: theme.colors.primary.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.person,
-                              color: theme.colors.primary,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            customer.name,
-                            style: theme.typography.sm,
-                          ),
-                          subtitle: customer.phone != null
-                              ? Text(
-                                  customer.phone!,
-                                  style: theme.typography.sm.copyWith(
-                                    color: theme.colors.mutedForeground,
-                                    fontSize: 11,
-                                  ),
-                                )
-                              : null,
-                          onTap: () {
-                            ref.read(cartProvider.notifier).setCustomer(customer);
-                            Navigator.of(context).pop();
-                          },
-                        );
-                      },
-                    ),
-        ),
-        actions: [
-          FButton(
-            onPress: () => Navigator.of(context).pop(),
-            style: FButtonStyle.outline(),
-            child: const Text('Annuler'),
-          ),
-        ],
       ),
     );
   }
@@ -380,74 +218,98 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Montant reçu et Monnaie rendue
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colors.muted.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Montant reçu',
-                      style: theme.typography.sm.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatCurrency(double.tryParse(_amountController.text) ?? 0.0),
-                      style: theme.typography.lg.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colors.muted.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Monnaie rendue',
-                      style: theme.typography.sm.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatCurrency(double.tryParse(_changeController.text) ?? 0.0),
-                      style: theme.typography.lg.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        Text(
+          'Montant reçu',
+          style: theme.typography.base.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _amountController,
+          decoration: const InputDecoration(
+            hintText: 'Entrez le montant reçu',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.attach_money),
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) => setState(() {}),
         ),
         const SizedBox(height: 12),
-        // Pad numérique
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colors.muted,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total à payer:',
+                    style: theme.typography.sm,
+                  ),
+                  Text(
+                    _formatCurrency(_totalToPay),
+                    style: theme.typography.base.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Monnaie rendue:',
+                    style: theme.typography.sm,
+                  ),
+                  Text(
+                    _formatCurrency(_change),
+                    style: theme.typography.base.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _change > 0 ? theme.colors.primary : theme.colors.foreground,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Option pour créer un avoir au lieu de rendre la monnaie (non automatique)
+        if (_change > 0) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Checkbox(
+                value: _createCreditNote,
+                onChanged: (value) {
+                  setState(() {
+                    _createCreditNote = value ?? false;
+                  });
+                },
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _createCreditNote = !_createCreditNote;
+                    });
+                  },
+                  child: Text(
+                    'Créer un avoir au lieu de rendre la monnaie',
+                    style: theme.typography.sm,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
+        // Numeric Pad
         _buildNumericPad(theme),
       ],
     );
@@ -462,25 +324,22 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         border: Border.all(color: theme.colors.border),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Ligne 1: 1, 2, 3, C
           Row(
-            mainAxisSize: MainAxisSize.max,
             children: [
               _buildNumericButton('1', theme),
               _buildNumericButton('2', theme),
               _buildNumericButton('3', theme),
               _buildActionButton('C', theme, () {
                 _amountController.clear();
-                _updateChange();
+                setState(() {});
               }),
             ],
           ),
           const SizedBox(height: 8),
           // Ligne 2: 4, 5, 6, ←
           Row(
-            mainAxisSize: MainAxisSize.max,
             children: [
               _buildNumericButton('4', theme),
               _buildNumericButton('5', theme),
@@ -488,7 +347,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               _buildActionButton('←', theme, () {
                 if (_amountController.text.isNotEmpty) {
                   _amountController.text = _amountController.text.substring(0, _amountController.text.length - 1);
-                  _updateChange();
+                  setState(() {});
                 }
               }),
             ],
@@ -496,21 +355,19 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           const SizedBox(height: 8),
           // Ligne 3: 7, 8, 9, =
           Row(
-            mainAxisSize: MainAxisSize.max,
             children: [
               _buildNumericButton('7', theme),
               _buildNumericButton('8', theme),
               _buildNumericButton('9', theme),
               _buildActionButton('=', theme, () {
-                _amountController.text = widget.total.toStringAsFixed(2);
-                _updateChange();
+                _amountController.text = _totalToPay.toStringAsFixed(0);
+                setState(() {});
               }),
             ],
           ),
           const SizedBox(height: 8),
-          // Ligne 4: ., 0, 00, ✓
+          // Ligne 4: ., 0, 00, Entrée
           Row(
-            mainAxisSize: MainAxisSize.max,
             children: [
               _buildNumericButton('.', theme),
               _buildNumericButton('0', theme),
@@ -536,7 +393,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             } else {
               _amountController.text += text;
             }
-            _updateChange();
+            setState(() {});
           },
           style: FButtonStyle.outline(),
           child: Text(
@@ -563,6 +420,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             style: theme.typography.base.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: 16,
+              color: Colors.white,
             ),
           ),
         ),
@@ -570,271 +428,194 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     );
   }
 
-  Widget _buildReceiptPreview(FThemeData theme, dynamic cartState) {
+  Widget _buildReceiptPreview(FThemeData theme, CartState cartState) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colors.background,
-        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: theme.colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colors.foreground.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Aperçu du reçu',
+            style: theme.typography.base.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+          ...cartState.items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${item.quantity}x ${item.product.name}',
+                    style: theme.typography.sm,
+                  ),
+                ),
+                Text(
+                  _formatCurrency((item.product.price ?? 0.0) * item.quantity),
+                  style: theme.typography.sm.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Sous-total:',
+                style: theme.typography.sm,
+              ),
+              Text(
+                _formatCurrency(cartState.subtotal),
+                style: theme.typography.sm,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TVA:',
+                style: theme.typography.sm,
+              ),
+              Text(
+                _formatCurrency(cartState.taxAmount),
+                style: theme.typography.sm,
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TOTAL:',
+                style: theme.typography.base.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                _formatCurrency(_totalToPay),
+                style: theme.typography.base.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colors.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Store Info
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'IntegralPOS',
-                    style: theme.typography.base.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: theme.colors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                    style: theme.typography.xs.copyWith(
-                      color: theme.colors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(
-              height: 24,
-              color: theme.colors.border,
-            ),
-            // Items List
-            Text(
-              'Articles:',
-              style: theme.typography.sm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colors.foreground,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...cartState.items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.product.name,
-                          style: theme.typography.xs.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: theme.colors.foreground,
-                          ),
-                        ),
-                        Text(
-                          '${item.quantity} x ${_formatCurrency(item.product.price ?? 0.0)}',
-                          style: theme.typography.xs.copyWith(
-                            color: theme.colors.mutedForeground,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatCurrency(item.quantity * (item.product.price ?? 0.0)),
-                    style: theme.typography.xs.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: theme.colors.foreground,
-                    ),
-                  ),
-                ],
-              ),
-            )).toList(),
-            Divider(
-              height: 24,
-              color: theme.colors.border,
-            ),
-            // Totals
-            _buildReceiptRow('Sous-total:', _formatCurrency(cartState.subtotal), theme, isTotal: false),
-            const SizedBox(height: 4),
-            _buildReceiptRow('TVA:', _formatCurrency(cartState.taxAmount), theme, isTotal: false),
-            Divider(
-              height: 16,
-              color: theme.colors.border,
-            ),
-            _buildReceiptRow('TOTAL:', _formatCurrency(widget.total), theme, isTotal: true),
-            const SizedBox(height: 16),
-            // Payment info
-            if (_amountController.text.isNotEmpty && _selectedMethod == PaymentMethod.cash) ...[
-              _buildReceiptRow('Montant reçu:', _formatCurrency(double.tryParse(_amountController.text) ?? 0.0), theme, isTotal: false),
-              const SizedBox(height: 4),
-              _buildReceiptRow('Monnaie:', _formatCurrency(double.tryParse(_changeController.text) ?? 0.0), theme, isTotal: false),
-            ],
-            Divider(
-              height: 24,
-              color: theme.colors.border,
-            ),
-            // Footer
-            Center(
-              child: Text(
-                'Merci de votre visite !',
-                style: theme.typography.xs.copyWith(
-                  color: theme.colors.mutedForeground,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
-  }
-
-  Widget _buildReceiptRow(String label, String value, FThemeData theme, {required bool isTotal}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: theme.typography.xs.copyWith(
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            fontSize: isTotal ? 12 : 10,
-            color: theme.colors.foreground,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.typography.xs.copyWith(
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            fontSize: isTotal ? 12 : 10,
-            color: isTotal ? theme.colors.primary : theme.colors.foreground,
-          ),
-        ),
-      ],
-    );
-  }
-
-  IconData _getPaymentIcon(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return Icons.money;
-      case PaymentMethod.card:
-        return Icons.credit_card;
-      case PaymentMethod.mobile:
-        return Icons.phone_android;
-      case PaymentMethod.check:
-        return Icons.receipt;
-    }
-  }
-
-  String _getPaymentLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash:
-        return 'Espèces';
-      case PaymentMethod.card:
-        return 'Carte';
-      case PaymentMethod.mobile:
-        return 'Mobile';
-      case PaymentMethod.check:
-        return 'Chèque';
-    }
   }
 
   Future<void> _processPayment() async {
-    print('[PaymentPage] 💳 DÉBUT processus de paiement');
-    print('[PaymentPage] 💰 Total à payer: ${widget.total}');
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    
+    if (amount < _totalToPay) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le montant reçu est insuffisant'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
     });
 
     try {
-      // Calculate change
-      final amount = double.tryParse(_amountController.text) ?? 0.0;
-      final change = amount - widget.total;
-
-      if (_selectedMethod == PaymentMethod.cash && amount < widget.total) {
-        throw Exception('Le montant reçu est insuffisant');
-      }
-
-      // Record the sale
-      if (!mounted) return;
-
       final cartState = ref.read(cartProvider);
       final salesNotifier = ref.read(salesProvider.notifier);
       final cashRegisterNotifier = ref.read(cashRegisterProvider.notifier);
       final productNotifier = ref.read(productProvider.notifier);
       final cartNotifier = ref.read(cartProvider.notifier);
+
+      // Get user ID and device ID
       final authState = ref.read(authProvider);
-
-      print('[PaymentPage] 📦 Enregistrement de la vente...');
-
-      // Get current cash register ID
-      final cashRegisterState = ref.read(cashRegisterProvider);
-      final cashRegisterId = cashRegisterState.currentRegister?.id;
-      
-      // Get device ID
+      final userId = authState.user?.id ?? '';
       final deviceService = DeviceService();
-      final deviceId = deviceService.deviceId;
-      
-      // Get user ID
-      final userId = authState.user?.id ?? 'user1';
-      
+      final deviceId = await deviceService.getDeviceIdForApi();
+
       // Create sale
       final sale = await salesNotifier.createSale(
         cartState,
-        _selectedMethod.name,
+        _getPaymentMethodString(_selectedMethod),
         userId,
         deviceId,
-        cashRegisterId: cashRegisterId,
       );
 
-      if (sale == null) {
-        throw Exception('Échec de la création de la vente');
-      }
-
-      print('[PaymentPage] ✅ Vente créée: ${sale.id}');
-
       // Record in cash register
-      await cashRegisterNotifier.recordSale(sale);
-      print('[PaymentPage] ✅ Vente enregistrée dans la caisse');
+      if (sale != null) {
+        await cashRegisterNotifier.recordSale(sale);
 
-      // Update product stock
-      final productQuantities = <String, int>{};
-      for (final item in cartState.items) {
-        productQuantities[item.product.id] = item.quantity;
+        // Update stock
+        final productQuantities = <String, int>{};
+        for (final item in cartState.items) {
+          productQuantities[item.product.id] = item.quantity;
+        }
+        await productNotifier.updateStockForSale(productQuantities);
       }
-      await productNotifier.updateStockForSale(productQuantities);
-      print('[PaymentPage] ✅ Stock mis à jour');
 
-      // Clear cart
-      cartNotifier.clearCart();
+      // Create credit note if user explicitly selected the option (not automatic)
+      if (_change > 0 && _createCreditNote && sale != null) {
+        try {
+          final creditNoteService = CreditNoteService();
+          final creditNoteNotifier = ref.read(creditNoteProvider.notifier);
+          
+          final creditNote = await creditNoteService.createCreditNote(
+            customerId: cartState.selectedCustomer?.id,
+            initialAmount: _change,
+            originSaleId: sale.id,
+          );
+          
+          // Refresh credit notes list
+          await creditNoteNotifier.load();
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Avoir créé: ${_formatCurrency(_change)}'),
+                backgroundColor: Colors.blue,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (e) {
+          print('[PaymentPage] Error creating credit note: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur lors de la création de l\'avoir: $e'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
 
-      // Play success beep
-      BeepService().playSuccess();
-
-      // Capturer le rootNavigator AVANT toute opération qui pourrait fermer la page
-      final rootNavigator = mounted ? Navigator.of(context, rootNavigator: true) : null;
-
-      // Générer et afficher l'aperçu PDF du reçu (sans imprimer)
-      try {
+      // Generate and show receipt
+      if (sale != null && mounted) {
         final receiptService = ReceiptService();
         final pdfBytes = await receiptService.generatePdfBytes(sale);
-        
-        // Afficher uniquement l'aperçu PDF après paiement (pas d'impression automatique)
-        if (sale != null && mounted && rootNavigator != null) {
-          await rootNavigator.push(
+
+        if (mounted) {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PdfPreviewPage(
                 pdfBytes: pdfBytes,
@@ -843,14 +624,19 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             ),
           );
         }
-      } catch (e) {
-        print('[PaymentPage] ⚠️ Erreur génération PDF: $e');
-        // Ne pas bloquer le processus de paiement si l'aperçu PDF échoue
       }
 
-      // Show success and navigate back
+      // Clear cart
+      cartNotifier.clearCart();
+
+      // Play success beep
+      BeepService().playSuccess();
+
+      // Show success message
       if (mounted) {
-        final changeText = change > 0 ? ' - Monnaie: ${_formatCurrency(change)}' : '';
+        final changeText = _change > 0 && !_createCreditNote 
+            ? '\nMonnaie rendue: ${_formatCurrency(_change)}' 
+            : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Paiement effectué avec succès$changeText'),
@@ -858,17 +644,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             duration: const Duration(seconds: 3),
           ),
         );
+      }
 
-        // Navigate back to POS
+      // Navigate back
+      if (mounted) {
         Navigator.of(context).pop();
       }
-    } catch (e, stackTrace) {
-      print('[PaymentPage] ❌ ERREUR: $e');
-      print('[PaymentPage] Stack: $stackTrace');
-      
-      // Play error beep
+    } catch (e) {
       BeepService().playError();
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -883,6 +666,19 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           _isProcessing = false;
         });
       }
+    }
+  }
+
+  String _getPaymentMethodString(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.cash:
+        return 'cash';
+      case PaymentMethod.card:
+        return 'card';
+      case PaymentMethod.mobile:
+        return 'mobile';
+      case PaymentMethod.check:
+        return 'check';
     }
   }
 }

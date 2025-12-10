@@ -143,28 +143,6 @@ class AppConstants {
   static String get cashMovementsManualEndpoint => '$cashMovementsEndpoint/manual';
   static String cashMovementEndpoint(String id) => '$cashMovementsEndpoint/$id';
 
-  // API Endpoints - Tables (Restaurant)
-  static String tablesEndpoint(String warehouseId) => '$baseUrl/$warehouseId/tables';
-  static String tableEndpoint(String warehouseId, String id) => '${tablesEndpoint(warehouseId)}/$id';
-  static String occupyTableEndpoint(String warehouseId, String id) => '${tablesEndpoint(warehouseId)}/$id/occupy';
-  static String releaseTableEndpoint(String warehouseId, String id) => '${tablesEndpoint(warehouseId)}/$id/release';
-
-  // API Endpoints - Kitchen Tickets
-  static String kitchenTicketsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/kitchen-tickets';
-  static String kitchenTicketEndpoint(String warehouseId, String id) => '${kitchenTicketsEndpoint(warehouseId)}/$id';
-  static String kitchenTicketStatusEndpoint(String warehouseId, String id) => '${kitchenTicketsEndpoint(warehouseId)}/$id/status';
-  static String kitchenTicketItemStatusEndpoint(String warehouseId, String ticketId, String itemId) => '${kitchenTicketsEndpoint(warehouseId)}/$ticketId/items/$itemId/status';
-
-  // API Endpoints - Stock Adjustments
-  static String stockAdjustmentsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/stock-adjustments';
-  static String stockAdjustmentEndpoint(String warehouseId, String id) => '${stockAdjustmentsEndpoint(warehouseId)}/$id';
-  static String completeStockAdjustmentEndpoint(String warehouseId, String id) => '${stockAdjustmentsEndpoint(warehouseId)}/$id/complete';
-
-  // API Endpoints - Refunds
-  static String refundsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/refunds';
-  static String refundEndpoint(String warehouseId, String id) => '${refundsEndpoint(warehouseId)}/$id';
-  static String processRefundEndpoint(String warehouseId, String id) => '${refundsEndpoint(warehouseId)}/$id/process';
-
   // API Endpoints - Sync
   static String get syncStartEndpoint => '$baseUrl/sync/start';
   static String syncStreamEndpoint(String session) => '$baseUrl/sync/stream/$session';
@@ -175,6 +153,36 @@ class AppConstants {
   static String resolveConflictEndpoint(String conflict) => '$baseUrl/sync/conflicts/$conflict/resolve';
   static String get syncStatsEndpoint => '$baseUrl/sync/stats';
   static String get syncForceFullEndpoint => '$baseUrl/sync/force-full';
+
+  // API Endpoints - Kitchen/Tickets
+  static String kitchenTicketsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/kitchen/tickets';
+  static String kitchenTicketEndpoint(String warehouseId, String ticketId) => '$baseUrl/$warehouseId/kitchen/tickets/$ticketId';
+
+  // API Endpoints - Tables
+  static String tablesEndpoint(String warehouseId) => '$baseUrl/$warehouseId/tables';
+  static String tableEndpoint(String warehouseId, String tableId) => '$baseUrl/$warehouseId/tables/$tableId';
+  static String occupyTableEndpoint(String warehouseId, String tableId) => '$baseUrl/$warehouseId/tables/$tableId/occupy';
+  static String releaseTableEndpoint(String warehouseId, String tableId) => '$baseUrl/$warehouseId/tables/$tableId/release';
+
+  // API Endpoints - Credit Notes
+  static String creditNotesEndpoint(String warehouseId) => '$baseUrl/$warehouseId/credit-notes';
+  static String creditNoteEndpoint(String warehouseId, String id) => '${creditNotesEndpoint(warehouseId)}/$id';
+  static String applyCreditNoteEndpoint(String warehouseId, String id) => '${creditNotesEndpoint(warehouseId)}/$id/apply';
+
+  // API Endpoints - Tabs (Additions)
+  static String tabsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/tabs';
+  static String tabEndpoint(String warehouseId, String id) => '${tabsEndpoint(warehouseId)}/$id';
+  static String settleTabEndpoint(String warehouseId, String id) => '${tabsEndpoint(warehouseId)}/$id/settle';
+
+  // API Endpoints - Refunds
+  static String refundsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/refunds';
+  static String refundEndpoint(String warehouseId, String id) => '${refundsEndpoint(warehouseId)}/$id';
+  static String processRefundEndpoint(String warehouseId, String refundId) => '${refundsEndpoint(warehouseId)}/$refundId/process';
+
+  // API Endpoints - Stock Adjustments
+  static String stockAdjustmentsEndpoint(String warehouseId) => '$baseUrl/$warehouseId/stock-adjustments';
+  static String stockAdjustmentEndpoint(String warehouseId, String id) => '${stockAdjustmentsEndpoint(warehouseId)}/$id';
+  static String completeStockAdjustmentEndpoint(String warehouseId, String adjustmentId) => '${stockAdjustmentsEndpoint(warehouseId)}/$adjustmentId/complete';
 
   // Helper Methods (legacy - use specific endpoint methods above)
   // static String productEndpoint(String id) => '$productsEndpoint/$id';

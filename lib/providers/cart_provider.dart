@@ -135,28 +135,6 @@ class CartNotifier extends _$CartNotifier {
     Future.microtask(() => _calculateTotals());
   }
 
-  // Add item with specific quantity
-  void addItemWithQuantity(Product product, int quantity) {
-    if (quantity <= 0) return;
-    
-    final existingIndex = state.items.indexWhere(
-      (item) => item.product.id == product.id,
-    );
-
-    List<CartItem> updatedItems;
-    if (existingIndex >= 0) {
-      updatedItems = [...state.items];
-      updatedItems[existingIndex] = updatedItems[existingIndex].copyWith(
-        quantity: updatedItems[existingIndex].quantity + quantity,
-      );
-    } else {
-      updatedItems = [...state.items, CartItem(product: product, quantity: quantity)];
-    }
-
-    state = state.copyWith(items: updatedItems);
-    Future.microtask(() => _calculateTotals());
-  }
-
   // Remove item from cart
   void removeItem(String productId) {
     final updatedItems = state.items.where(
@@ -229,9 +207,7 @@ class CartNotifier extends _$CartNotifier {
     double subtotal = 0.0;
 
     for (final item in state.items) {
-      // Utiliser le prix du produit (peut être null, dans ce cas 0)
-      final price = item.product.price ?? 0.0;
-      subtotal += price * item.quantity;
+      subtotal += (item.product.price ?? 0.0) * item.quantity;
     }
 
     // Vérifier si les taxes sont activées
@@ -243,8 +219,7 @@ class CartNotifier extends _$CartNotifier {
     double taxAmount = 0.0;
     if (enableTax) {
       for (final item in state.items) {
-        final price = item.product.price ?? 0.0;
-        final itemSubtotal = price * item.quantity;
+        final itemSubtotal = (item.product.price ?? 0.0) * item.quantity;
         // Utiliser le taux de taxe du produit s'il existe, sinon le taux par défaut
         final taxRate = item.product.taxRate > 0 ? item.product.taxRate : defaultTaxRate;
         taxAmount += itemSubtotal * (taxRate / 100);

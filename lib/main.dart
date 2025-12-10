@@ -14,6 +14,7 @@ import 'models/warehouse_type.dart';
 import 'core/theme.dart';
 import 'core/initial_sync_service.dart';
 import 'core/api_service.dart';
+import 'widgets/inactivity_wrapper.dart';
 import 'core/api_service.dart' show ErrorInterceptor;
 import 'features/auth/login_page.dart';
 import 'features/cash_register/open_register_page.dart';
@@ -22,24 +23,23 @@ import 'features/settings/device_registration_debug_page.dart';
 import 'features/settings/printer_config_page.dart';
 import 'features/auth/company_warehouse_config_page.dart';
 import 'features/pos/payment_page.dart';
+import 'features/pos/pos_page.dart';
+import 'features/products/products_page.dart';
+import 'features/customers/customer_list_page.dart';
+import 'features/inventory/inventory_page.dart';
+import 'features/employees/employees_page.dart';
+import 'features/cash_register/cash_register_page.dart';
+import 'features/reports/reports_page.dart';
+import 'features/accounting/accounting_page.dart';
+import 'features/settings/settings_page.dart';
+import 'features/restaurant/tables_page.dart';
+import 'features/restaurant/waiters_page.dart';
+import 'features/restaurant/kitchen_page.dart';
+import 'features/pos/tab_list_page.dart';
+import 'features/pos/credit_note_list_page.dart';
+import 'features/sales/receipts_page.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
-import 'widgets/app_shell.dart';
-import 'providers/navigation_provider.dart';
-
-// Helper function pour créer une route AppShell avec initialisation du provider
-Widget _createAppShellRoute(AppRoute route) {
-  return Builder(
-    builder: (context) {
-      // Initialiser la route dans le provider
-      final container = ProviderScope.containerOf(context);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        container.read(navigationProvider.notifier).navigateTo(route);
-      });
-      return const AppShell();
-    },
-  );
-}
 
 void main() async {
   print('[Main] 🚀 DÉBUT main()');
@@ -248,41 +248,40 @@ class _IntegralPOSAppState extends ConsumerState<IntegralPOSApp> {
         theme: AppTheme.lightTheme(themeType: settingsState.themeType).toApproximateMaterialTheme(),
         darkTheme: AppTheme.darkTheme(themeType: settingsState.themeType).toApproximateMaterialTheme(),
         themeMode: settingsState.darkMode ? ThemeMode.dark : ThemeMode.light,
-        home: const SplashOrLogin(),
+        home: InactivityWrapper(
+          child: const SplashOrLogin(),
+        ),
         routes: {
           '/login': (context) => const LoginPage(),
           '/company-warehouse-config': (context) => const CompanyWarehouseConfigPage(),
-          // Routes principales gérées par AppShell avec IndexedStack
-          '/pos': (context) => _createAppShellRoute(AppRoute.pos),
-          '/products': (context) => _createAppShellRoute(AppRoute.products),
-          '/customers': (context) => _createAppShellRoute(AppRoute.customers),
-          '/inventory': (context) => _createAppShellRoute(AppRoute.inventory),
-          '/employees': (context) => _createAppShellRoute(AppRoute.employees),
-          '/cash-register': (context) => _createAppShellRoute(AppRoute.cashRegister),
-          '/reports': (context) => _createAppShellRoute(AppRoute.reports),
-          '/receipts': (context) => _createAppShellRoute(AppRoute.receipts),
-          '/accounting': (context) => _createAppShellRoute(AppRoute.accounting),
-          '/settings': (context) => _createAppShellRoute(AppRoute.settings),
-          '/tables': (context) => _createAppShellRoute(AppRoute.tables),
-          '/waiters': (context) => _createAppShellRoute(AppRoute.waiters),
-          '/kitchen': (context) => _createAppShellRoute(AppRoute.kitchen),
-          // Routes modales (gardent la navigation normale)
+          '/pos': (context) => PosPage(),
+          '/products': (context) => ProductsPage(),
+          '/customers': (context) => CustomerListPage(),
+          '/inventory': (context) => InventoryPage(),
+          '/employees': (context) => EmployeesPage(),
+          '/cash-register': (context) => CashRegisterPage(),
           '/open-register': (context) => const OpenRegisterPage(),
           '/close-register': (context) => const CloseRegisterPage(),
+          '/reports': (context) => ReportsPage(),
+          '/accounting': (context) => AccountingPage(),
+          '/settings': (context) => SettingsPage(),
           '/printer-config': (context) => const PrinterConfigPage(),
           '/device-debug': (context) => const DeviceRegistrationDebugPage(),
+          // Restaurant routes
+          '/tables': (context) => TablesPage(),
+          '/waiters': (context) => WaitersPage(),
+          '/kitchen': (context) => KitchenPage(),
+          // Credit notes and tabs
+          '/tabs': (context) => const TabListPage(),
+          '/credit-notes': (context) => const CreditNoteListPage(),
+          // Receipts page
+          '/receipts': (context) => const ReceiptsPage(),
+          // Payment page
           '/payment': (context) {
-            // Récupérer le total depuis les arguments
             final args = ModalRoute.of(context)?.settings.arguments;
-            final total = args is double ? args : 0.0;
-            return PaymentPage(total: total);
+            final totalToPay = args is double ? args : null;
+            return PaymentPage(totalToPay: totalToPay);
           },
-        },
-        onGenerateRoute: (settings) {
-          // Les routes principales sont déjà définies dans 'routes' et pointent vers AppShell
-          // onGenerateRoute est appelé seulement si la route n'est pas trouvée dans 'routes'
-          // Donc on retourne null pour laisser Flutter gérer les routes non définies
-          return null;
         },
       ),
       darkMode: settingsState.darkMode,
@@ -329,8 +328,6 @@ class _SplashOrLoginState extends ConsumerState<SplashOrLogin> {
 
       if (authState.isAuthenticated && mounted) {
         print('[SplashOrLogin] 📍 Redirection vers /pos...');
-        // Initialiser la route dans le provider
-        ref.read(navigationProvider.notifier).navigateTo(AppRoute.pos);
         Navigator.of(context).pushReplacementNamed('/pos');
       } else {
         print('[SplashOrLogin] 📍 Affichage de LoginPage');
@@ -345,65 +342,45 @@ class _SplashOrLoginState extends ConsumerState<SplashOrLogin> {
   @override
   Widget build(BuildContext context) {
     if (_isChecking) {
-      final screenSize = MediaQuery.of(context).size;
-      final logoSize = screenSize.width * 0.6; // 60% de la largeur de l'écran
-      
       return Scaffold(
-        body: Stack(
-          children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // App Logo - Plus grand
-                  Image.asset(
-                    'assets/images/IntegralPOS.jpg',
-                    width: logoSize,
-                    height: logoSize,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'IntegralPOS',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Point de vente moderne',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const CircularProgressIndicator(),
-                ],
-              ),
-            ),
-            // Texte "Développé par DS Solution" en bas - Plus visible
-            Positioned(
-              bottom: 30,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'Développé par DS Solution',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // App Logo/Icon
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.point_of_sale_rounded,
+                  size: 60,
+                  color: Colors.white,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              const Text(
+                'IntegralPOS',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Point de vente moderne',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+              const CircularProgressIndicator(),
+            ],
+          ),
         ),
       );
     }

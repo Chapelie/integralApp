@@ -5,6 +5,7 @@ import '../../providers/product_provider.dart';
 import '../../widgets/main_layout.dart';
 import '../products/widgets/product_image_tile.dart';
 import '../../widgets/mobile_header.dart';
+import '../products/stock_detail_page.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
@@ -326,10 +327,18 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         final isLowStock = product.stock <= (product.minStock ?? 5);
         final isOutOfStock = product.stock == 0;
 
-        return FCard.raw(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => StockDetailPage(product: product),
+              ),
+            );
+          },
+          child: FCard.raw(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
               children: [
                 // Product Image
                 Container(
@@ -469,6 +478,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

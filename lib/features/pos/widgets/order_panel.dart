@@ -10,6 +10,9 @@ import '../../../core/cash_register_guard_service.dart';
 import '../../../core/cash_register_service.dart';
 import '../../../features/cash_register/force_open_register_dialog.dart';
 import '../../../core/business_config.dart';
+import '../../../core/beep_service.dart';
+import '../../../providers/tab_provider.dart';
+import '../tab_ticket_page.dart';
 import 'customer_selection_widget.dart';
 import '../../restaurant/widgets/restaurant_order_info.dart';
 
@@ -153,19 +156,24 @@ class _OrderPanelState extends ConsumerState<OrderPanel> {
                   children: [
                     Expanded(
                       child: FButton(
-                        onPress: _handleCancel,
-                        prefix: const Icon(FIcons.x, size: 12),
+                        onPress: cartState.items.isNotEmpty && !_isProcessing
+                            ? _handleCreateTab
+                            : null,
+                        prefix: const Icon(FIcons.receipt, size: 12),
                         style: FButtonStyle.outline(),
-                        child: const Text('Annuler', style: TextStyle(fontSize: 11)),
+                        child: Text(
+                          _isProcessing ? 'Traitement...' : 'Addition',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: FButton(
-                        onPress: _handleRefund,
-                        prefix: const Icon(FIcons.undo, size: 12),
+                        onPress: _handleCancel,
+                        prefix: const Icon(FIcons.x, size: 12),
                         style: FButtonStyle.outline(),
-                        child: const Text('Rembourser', style: TextStyle(fontSize: 11)),
+                        child: const Text('Annuler', style: TextStyle(fontSize: 11)),
                       ),
                     ),
                   ],
@@ -357,9 +365,42 @@ class _OrderPanelState extends ConsumerState<OrderPanel> {
     _notesController.clear();
   }
 
-  Future<void> _handleRefund() async {
-    // Show PIN dialog and refund dialog
-    _showError('Fonction remboursement à implémenter');
+  Future<void> _handleCreateTab() async {
+    final cartState = ref.read(cartProvider);
+    if (cartState.items.isEmpty) {
+      _showError('Le panier est vide pour créer une addition');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final tabNotifier = ref.read(tabProvider.notifier);
+      final newTab = await tabNotifier.createTabFromCart(cartState);
+
+      if (newTab != null && mounted) {
+        ref.read(cartProvider.notifier).clearCart();
+        _notesController.clear();
+        BeepService().playSuccess();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TabTicketPage(tab: newTab),
+          ),
+        );
+      } else {
+        _showError('Échec de la création de l\'addition');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la création de l\'addition: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
   }
 
 

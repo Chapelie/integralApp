@@ -95,13 +95,6 @@ class _HamburgerMenuState extends State<HamburgerMenu> {
           semanticLabel: 'Naviguer vers Rapports',
         ),
       MenuItemData(
-        icon: Icons.receipt_long,
-        activeIcon: Icons.receipt_long,
-        label: 'Reçus',
-        route: '/receipts',
-        semanticLabel: 'Naviguer vers Reçus',
-      ),
-      MenuItemData(
         icon: FIcons.calculator,
         activeIcon: FIcons.calculator,
         label: 'Comptabilisation',
@@ -114,6 +107,27 @@ class _HamburgerMenuState extends State<HamburgerMenu> {
         label: 'Paramètres',
         route: '/settings',
         semanticLabel: 'Naviguer vers Paramètres',
+      ),
+      MenuItemData(
+        icon: Icons.receipt,
+        activeIcon: Icons.receipt,
+        label: 'Reçus',
+        route: '/receipts',
+        semanticLabel: 'Naviguer vers Reçus',
+      ),
+      MenuItemData(
+        icon: Icons.receipt_long,
+        activeIcon: Icons.receipt_long,
+        label: 'Additions',
+        route: '/tabs',
+        semanticLabel: 'Naviguer vers Additions',
+      ),
+      MenuItemData(
+        icon: Icons.credit_card,
+        activeIcon: Icons.credit_card,
+        label: 'Avoirs',
+        route: '/credit-notes',
+        semanticLabel: 'Naviguer vers Avoirs',
       ),
     ];
     return items;

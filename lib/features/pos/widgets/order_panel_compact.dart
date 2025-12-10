@@ -13,7 +13,10 @@ import '../../../providers/cash_register_provider.dart';
 import '../../../providers/customer_provider.dart';
 import '../../../core/cash_register_service.dart';
 import '../../../core/cash_register_guard_service.dart';
+import '../../../core/beep_service.dart';
+import '../../../providers/tab_provider.dart';
 import '../../../features/cash_register/force_open_register_dialog.dart';
+import '../tab_ticket_page.dart';
 
 class OrderPanelCompact extends ConsumerStatefulWidget {
   const OrderPanelCompact({super.key});
@@ -201,19 +204,21 @@ class _OrderPanelCompactState extends ConsumerState<OrderPanelCompact> {
                   children: [
                     Expanded(
                       child: FButton(
-                        prefix: const Icon(FIcons.x),
-                        onPress: _handleCancel,
+                        prefix: const Icon(FIcons.receipt),
+                        onPress: cartState.items.isNotEmpty && !_isProcessing
+                            ? _handleCreateTab
+                            : null,
                         style: FButtonStyle.outline(),
-                        child: const Text('Annuler'),
+                        child: Text(_isProcessing ? 'Traitement...' : 'Addition'),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: FButton(
-                        prefix: const Icon(FIcons.undo),
-                        onPress: _handleRefund,
-                        style: FButtonStyle.destructive(),
-                        child: const Text('Rembourser'),
+                        prefix: const Icon(FIcons.x),
+                        onPress: _handleCancel,
+                        style: FButtonStyle.outline(),
+                        child: const Text('Annuler'),
                       ),
                     ),
                   ],
@@ -430,8 +435,43 @@ class _OrderPanelCompactState extends ConsumerState<OrderPanelCompact> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _handleRefund() async {
-    _showError('Fonction remboursement à implémenter');
+  Future<void> _handleCreateTab() async {
+    final cartState = ref.read(cartProvider);
+    if (cartState.items.isEmpty) {
+      _showError('Le panier est vide pour créer une addition');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final tabNotifier = ref.read(tabProvider.notifier);
+      final newTab = await tabNotifier.createTabFromCart(cartState);
+
+      if (newTab != null && mounted) {
+        ref.read(cartProvider.notifier).clearCart();
+        _notesController.clear();
+        BeepService().playSuccess();
+        Navigator.of(context).pop(); // Close bottom sheet
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TabTicketPage(tab: newTab),
+          ),
+        );
+      } else {
+        _showError('Échec de la création de l\'addition');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la création de l\'addition: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
   }
 
   Future<void> _selectCustomer() async {

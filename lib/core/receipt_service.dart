@@ -247,4 +247,136 @@ class ReceiptService {
         return method;
     }
   }
+
+  /// Generate PDF bytes for a tab (addition)
+  Future<Uint8List> generateTabPdfBytes(dynamic tab) async {
+    final pdf = pw.Document();
+    
+    String companyName = 'INTEGRALPOS';
+    try {
+      final companyWarehouseService = CompanyWarehouseService();
+      final company = await companyWarehouseService.getSelectedCompany();
+      if (company != null && company.name.isNotEmpty) {
+        companyName = company.name.toUpperCase();
+      }
+    } catch (e) {
+      print('[ReceiptService] Erreur récupération company: $e');
+    }
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat(58 * PdfPageFormat.mm, 200 * PdfPageFormat.mm),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _buildHeader(companyName),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                'ADDITION',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(tab.createdAt)}',
+                style: pw.TextStyle(fontSize: 10),
+              ),
+              if (tab.tableNumber != null) ...[
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Table: ${tab.tableNumber}',
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+              ],
+              if (tab.waiterName != null) ...[
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Serveur: ${tab.waiterName}',
+                  style: pw.TextStyle(fontSize: 10),
+                ),
+              ],
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              ...tab.items.map((item) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            item.productName,
+                            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                          ),
+                          pw.Text(
+                            '${item.quantity} x ${_formatCurrency(item.price)}',
+                            style: pw.TextStyle(fontSize: 8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    pw.Text(
+                      _formatCurrency(item.lineTotal),
+                      style: pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
+              )).toList(),
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              _buildReceiptRow('Sous-total:', _formatCurrency(tab.subtotal)),
+              pw.SizedBox(height: 4),
+              _buildReceiptRow('TVA:', _formatCurrency(tab.taxAmount)),
+              pw.SizedBox(height: 8),
+              _buildReceiptRow('TOTAL:', _formatCurrency(tab.total), isTotal: true),
+              pw.SizedBox(height: 10),
+              _buildReceiptRow('Déjà payé:', _formatCurrency(tab.paidAmount)),
+              pw.SizedBox(height: 4),
+              _buildReceiptRow('Reste à payer:', _formatCurrency(tab.remaining), isTotal: true),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Merci de votre visite !',
+                style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
+                textAlign: pw.TextAlign.center,
+              ),
+              pw.SizedBox(height: 10),
+              _buildFooter(),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  pw.Widget _buildReceiptRow(String label, String value, {bool isTotal = false}) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            fontSize: isTotal ? 12 : 10,
+            fontWeight: isTotal ? pw.FontWeight.bold : pw.FontWeight.normal,
+          ),
+        ),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: isTotal ? 12 : 10,
+            fontWeight: isTotal ? pw.FontWeight.bold : pw.FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
 }

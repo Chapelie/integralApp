@@ -225,14 +225,6 @@ class Sidebar extends ConsumerWidget {
         ),
 
       SidebarItem(
-        icon: Icons.receipt_long,
-        activeIcon: Icons.receipt_long,
-        label: 'Reçus',
-        route: '/receipts',
-        semanticLabel: 'Naviguer vers Reçus',
-      ),
-
-      SidebarItem(
         icon: Icons.account_balance,
         activeIcon: Icons.account_balance,
         label: 'Comptabilisation',
@@ -246,6 +238,27 @@ class Sidebar extends ConsumerWidget {
         label: 'Paramètres',
         route: '/settings',
         semanticLabel: 'Naviguer vers Paramètres',
+      ),
+      SidebarItem(
+        icon: Icons.receipt,
+        activeIcon: Icons.receipt,
+        label: 'Reçus',
+        route: '/receipts',
+        semanticLabel: 'Naviguer vers Reçus',
+      ),
+      SidebarItem(
+        icon: Icons.receipt_long,
+        activeIcon: Icons.receipt_long,
+        label: 'Additions',
+        route: '/tabs',
+        semanticLabel: 'Naviguer vers Additions',
+      ),
+      SidebarItem(
+        icon: Icons.credit_card,
+        activeIcon: Icons.credit_card,
+        label: 'Avoirs',
+        route: '/credit-notes',
+        semanticLabel: 'Naviguer vers Avoirs',
       ),
     ];
 

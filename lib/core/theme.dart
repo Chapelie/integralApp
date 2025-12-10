@@ -9,7 +9,7 @@ class AppTheme {
   // Orange, Black & White Theme - Light Mode
   static const Color lightPrimary = Color(0xFFFF6B35); // Orange principal
   static const Color lightPrimaryForeground = Color(0xFFFFFFFF); // Blanc
-  static const Color lightSecondary = Color(0xFFFF8C52); // Orange doux (évite le noir)
+  static const Color lightSecondary = Color(0xFFFF8C52); // Orange doux
   static const Color lightSecondaryForeground = Color(0xFFFFFFFF); // Blanc
   static const Color lightBackground = Color(0xFFFFFFFF); // Blanc pur
   static const Color lightForeground = Color(0xFF000000); // Noir pur
@@ -25,7 +25,7 @@ class AppTheme {
 
   // Orange, Black & White Theme - Dark Mode
   static const Color darkPrimary = Color(0xFFFF6B35); // Orange principal (même couleur)
-  static const Color darkPrimaryForeground = Color(0xFFFFFFFF); // Blanc pour contraste bouton
+  static const Color darkPrimaryForeground = Color(0xFFFFFFFF); // Blanc
   static const Color darkSecondary = Color(0xFFBDBDBD); // Gris clair
   static const Color darkSecondaryForeground = Color(0xFF000000); // Noir
   static const Color darkBackground = Color(0xFF000000); // Noir pur
@@ -34,11 +34,11 @@ class AppTheme {
   static const Color darkMutedForeground = Color(0xFF9E9E9E); // Gris moyen
   static const Color darkBorder = Color(0xFF424242); // Gris foncé pour bordures
   static const Color darkDestructive = Color(0xFFF44336); // Rouge clair
-  static const Color darkDestructiveForeground = Color(0xFFFFFFFF);
+  static const Color darkDestructiveForeground = Color(0xFF000000);
   static const Color darkSuccess = Color(0xFF66BB6A); // Vert clair
-  static const Color darkSuccessForeground = Color(0xFFFFFFFF);
+  static const Color darkSuccessForeground = Color(0xFF000000);
   static const Color darkWarning = Color(0xFFFFB74D); // Orange clair
-  static const Color darkWarningForeground = Color(0xFFFFFFFF);
+  static const Color darkWarningForeground = Color(0xFF000000);
 
   static FThemeData lightTheme({AppThemeType themeType = AppThemeType.neutral}) {
     switch (themeType) {

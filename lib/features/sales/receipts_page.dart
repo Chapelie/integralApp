@@ -453,8 +453,10 @@ class _ReceiptsPageState extends ConsumerState<ReceiptsPage> {
             ),
           );
           
-          // Ajouter le produit avec la quantité de la vente (plus efficace)
-          cartNotifier.addItemWithQuantity(product, saleItem.quantity);
+          // Ajouter le produit avec la quantité de la vente
+          for (int i = 0; i < saleItem.quantity; i++) {
+            cartNotifier.addItem(product);
+          }
         } catch (e) {
           print('[ReceiptsPage] Error adding item to cart: $e');
           // Continue avec les autres items
