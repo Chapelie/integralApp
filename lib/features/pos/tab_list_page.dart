@@ -9,12 +9,21 @@ import 'package:intl/intl.dart';
 import '../../providers/tab_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/product.dart';
+import '../../models/tab.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 import 'tab_ticket_page.dart';
 import 'payment_page.dart';
 
-class TabListPage extends ConsumerWidget {
+class TabListPage extends ConsumerStatefulWidget {
   const TabListPage({super.key});
+
+  @override
+  ConsumerState<TabListPage> createState() => _TabListPageState();
+}
+
+class _TabListPageState extends ConsumerState<TabListPage> {
+  String _searchQuery = '';
 
   String _formatCurrency(double amount) {
     final formatter = NumberFormat.currency(
@@ -25,43 +34,63 @@ class TabListPage extends ConsumerWidget {
     return formatter.format(amount);
   }
 
+  List<TabModel> _filterTabs(List<TabModel> tabs, String query) {
+    if (query.isEmpty) return tabs;
+    final lowerQuery = query.toLowerCase();
+    return tabs.where((tab) {
+      return tab.id.toLowerCase().contains(lowerQuery) ||
+          (tab.tableNumber != null && tab.tableNumber!.toLowerCase().contains(lowerQuery)) ||
+          (tab.waiterName != null && tab.waiterName!.toLowerCase().contains(lowerQuery)) ||
+          _formatCurrency(tab.total).toLowerCase().contains(lowerQuery) ||
+          _formatCurrency(tab.remaining).toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(tabProvider);
     final theme = FTheme.of(context);
+    final filteredTabs = _filterTabs(state.tabs, _searchQuery);
 
     return MainLayout(
       currentRoute: '/tabs',
-      appBar: AppBar(
-        title: const Text('Additions'),
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(tabProvider.notifier).load(forceRefresh: true),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Rafraîchir',
-          ),
-        ],
+      appBar: UnifiedHeader(
+        title: 'Additions',
+        showSearch: true,
+        searchHint: 'Rechercher par ID, table, serveur, montant...',
+        onSearch: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        onRefresh: () => ref.read(tabProvider.notifier).load(forceRefresh: true),
       ),
       child: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
               ? Center(child: Text('Erreur: ${state.error}'))
-              : state.tabs.isEmpty
+              : filteredTabs.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long, size: 48, color: theme.colors.mutedForeground),
+                          Icon(
+                            _searchQuery.isNotEmpty ? Icons.search_off : Icons.receipt_long,
+                            size: 48,
+                            color: theme.colors.mutedForeground,
+                          ),
                           const SizedBox(height: 12),
-                          const Text('Aucune addition en attente'),
+                          Text(_searchQuery.isNotEmpty
+                              ? 'Aucune addition trouvée pour "$_searchQuery"'
+                              : 'Aucune addition en attente'),
                         ],
                       ),
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: state.tabs.length,
+                      itemCount: filteredTabs.length,
                       itemBuilder: (context, index) {
-                        final tab = state.tabs[index];
+                        final tab = filteredTabs[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
@@ -131,7 +160,7 @@ class TabListPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _handlePayTab(BuildContext context, WidgetRef ref, tab) async {
+  Future<void> _handlePayTab(BuildContext context, WidgetRef ref, TabModel tab) async {
     final cartState = ref.read(cartProvider);
     // Load tab items into cart
     ref.read(cartProvider.notifier).clearCart();

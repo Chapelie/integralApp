@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import '../../core/constants.dart';
+import '../../widgets/unified_header.dart';
+import '../../widgets/main_layout.dart';
 
 class SimpleConnectionTest extends StatelessWidget {
   const SimpleConnectionTest({super.key});
@@ -12,13 +14,13 @@ class SimpleConnectionTest extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = FTheme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Test Connexion'),
-        backgroundColor: theme.colors.primary,
-        foregroundColor: Colors.white,
+    return MainLayout(
+      currentRoute: '/connection-test',
+      appBar: UnifiedHeader(
+        title: 'Test Connexion',
+        color: theme.colors.primary,
       ),
-      body: Padding(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

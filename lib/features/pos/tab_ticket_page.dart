@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../models/tab.dart';
 import '../../core/receipt_service.dart';
 import '../../widgets/pdf_preview_page.dart';
+import '../../widgets/unified_header.dart';
 
 class TabTicketPage extends ConsumerStatefulWidget {
   final TabModel tab;
@@ -63,8 +64,8 @@ class _TabTicketPageState extends ConsumerState<TabTicketPage> {
     final theme = FTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Addition #${widget.tab.id.substring(0, 6)}'),
+      appBar: UnifiedHeader(
+        title: 'Addition #${widget.tab.id.substring(0, 6)}',
         actions: [
           FButton(
             onPress: _generateAndShowPdf,
@@ -238,5 +239,6 @@ class _TabTicketPageState extends ConsumerState<TabTicketPage> {
     );
   }
 }
+
 
 

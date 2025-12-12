@@ -7,21 +7,48 @@ import 'package:forui/forui.dart';
 import '../../models/waiter.dart';
 import '../../providers/waiter_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 import 'waiter_form_dialog.dart';
 
-class WaitersPage extends ConsumerWidget {
+class WaitersPage extends ConsumerStatefulWidget {
   const WaitersPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WaitersPage> createState() => _WaitersPageState();
+}
+
+class _WaitersPageState extends ConsumerState<WaitersPage> {
+  String _searchQuery = '';
+
+  List<Waiter> _filterWaiters(List<Waiter> waiters) {
+    if (_searchQuery.isEmpty) return waiters;
+    final query = _searchQuery.toLowerCase();
+    return waiters.where((waiter) {
+      return waiter.name.toLowerCase().contains(query) ||
+          (waiter.phone?.toLowerCase().contains(query) ?? false) ||
+          (waiter.email?.toLowerCase().contains(query) ?? false);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final waitersAsync = ref.watch(waiterListProvider);
     final theme = FTheme.of(context);
 
     return MainLayout(
       currentRoute: '/waiters',
-      appBar: AppBar(
-        title: const Text('Gestion du Personnel'),
-        backgroundColor: theme.colors.background,
+      appBar: UnifiedHeader(
+        title: 'Gestion du Personnel',
+        showSearch: true,
+        searchHint: 'Rechercher un membre du personnel...',
+        onSearch: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        onRefresh: () {
+          ref.refresh(waiterListProvider);
+        },
         actions: [
           FButton(
             onPress: () => _showWaiterForm(context, ref),
@@ -38,10 +65,33 @@ class WaitersPage extends ConsumerWidget {
       ),
       child: waitersAsync.when(
         data: (waiters) {
-          if (waiters.isEmpty) {
+          final filteredWaiters = _filterWaiters(waiters);
+          if (filteredWaiters.isEmpty && waiters.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off, size: 64, color: theme.colors.mutedForeground),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun résultat',
+                    style: theme.typography.lg,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aucun membre du personnel ne correspond à votre recherche',
+                    style: theme.typography.sm.copyWith(
+                      color: theme.colors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          if (filteredWaiters.isEmpty) {
             return _buildEmptyState(context, ref, theme);
           }
-          return _buildWaitersList(context, ref, waiters, theme);
+          return _buildWaitersList(context, ref, filteredWaiters, theme);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(

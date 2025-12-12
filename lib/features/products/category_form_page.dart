@@ -6,6 +6,7 @@ import '../../models/category.dart';
 import '../../providers/category_provider.dart';
 import '../../core/beep_service.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class CategoryFormPage extends ConsumerStatefulWidget {
   final Category? category;
@@ -49,8 +50,8 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
 
     return MainLayout(
       currentRoute: '/products',
-      appBar: AppBar(
-        title: Text(isEditing ? 'Modifier la catégorie' : 'Nouvelle catégorie'),
+      appBar: UnifiedHeader(
+        title: isEditing ? 'Modifier la catégorie' : 'Nouvelle catégorie',
         actions: [
           if (_isLoading)
             const Padding(

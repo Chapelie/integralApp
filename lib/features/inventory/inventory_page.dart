@@ -4,7 +4,7 @@ import 'package:forui/forui.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/main_layout.dart';
 import '../products/widgets/product_image_tile.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 import '../products/stock_detail_page.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
@@ -60,29 +60,28 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
 
     return MainLayout(
       currentRoute: '/inventory',
-      appBar: MobileHeader(
+      appBar: UnifiedHeader(
         title: 'Gestion du Stock',
+        showSearch: true,
+        searchHint: 'Rechercher un produit...',
+        onSearch: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        onFilter: () {
+          setState(() { 
+            _showLowStock = !_showLowStock; 
+          });
+        },
         actions: [
           IconButton(
-            onPressed: () {
-              setState(() { _showLowStock = !_showLowStock; });
-            },
             icon: Icon(_showLowStock ? Icons.filter_alt : Icons.filter_alt_outlined),
             tooltip: 'Filtrer stock faible',
             color: _showLowStock ? Colors.orange : null,
-          ),
-          IconButton(
             onPressed: () {
-              setState(() {
-                _showSearchBar = !_showSearchBar;
-                if (!_showSearchBar) {
-                  _searchQuery = '';
-                  _searchController.clear();
-                }
-              });
+              setState(() { _showLowStock = !_showLowStock; });
             },
-            icon: Icon(_showSearchBar ? Icons.close : Icons.search),
-            tooltip: _showSearchBar ? 'Fermer la recherche' : 'Rechercher',
           ),
         ],
       ),

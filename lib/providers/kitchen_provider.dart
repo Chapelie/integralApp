@@ -25,14 +25,14 @@ class KitchenOrderList extends _$KitchenOrderList {
   }
 
   /// Refresh orders list
-  Future<void> refresh() async {
+  Future<void> refresh({bool forceRefresh = true}) async {
     if (!ref.mounted) return;
     state = const AsyncValue.loading();
     if (!ref.mounted) return;
     state = await AsyncValue.guard(() async {
       if (!ref.mounted) return <KitchenOrder>[];
       final service = ref.read(kitchenServiceProvider);
-      return await service.getAllOrders();
+      return await service.getAllOrders(forceRefresh: forceRefresh);
     });
   }
 

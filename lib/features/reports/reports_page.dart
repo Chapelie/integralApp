@@ -7,6 +7,7 @@ import '../../providers/cash_register_provider.dart';
 import '../../core/sales_service.dart';
 import '../../core/reports_service.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 import '../../widgets/pdf_preview_page.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -85,21 +86,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
     return MainLayout(
       currentRoute: '/reports',
-      appBar: AppBar(
-        title: const Text('Rapports'),
+      appBar: UnifiedHeader(
+        title: 'Rapports',
+        onFilter: _selectDateRange,
+        onRefresh: _loadStats,
         actions: [
-          FButton(
-            onPress: _selectDateRange,
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.date_range, size: 16),
-                SizedBox(width: 4),
-                Text('Période'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
           FButton(
             onPress: _isPrinting ? null : () => _printSalesReport(),
             child: _isPrinting

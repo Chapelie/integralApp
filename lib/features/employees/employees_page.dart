@@ -6,6 +6,7 @@ import '../../providers/employee_provider.dart';
 import '../../models/employee.dart';
 import 'employee_form_page.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class EmployeesPage extends ConsumerStatefulWidget {
   const EmployeesPage({super.key});
@@ -75,8 +76,8 @@ class _EmployeesPageState extends ConsumerState<EmployeesPage> {
 
     return MainLayout(
       currentRoute: '/employees',
-      appBar: AppBar(
-        title: const Text('Gestion des Employés'),
+      appBar: UnifiedHeader(
+        title: 'Gestion des Employés',
         actions: [
           FButton(
             onPress: () => _navigateToEmployeeForm(context),

@@ -31,6 +31,8 @@ class MainLayout extends ConsumerWidget {
 
     if (isDesktop) {
       // Desktop with fixed sidebar
+      // Only show appBar if it's a full-featured header (like UnifiedHeader with search/sync)
+      // For simple headers, the Sidebar header is sufficient
       return Scaffold(
         appBar: appBar,
         body: Row(

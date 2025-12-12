@@ -14,6 +14,7 @@ import '../../../core/printer_config_service.dart';
 import '../../../core/company_warehouse_service.dart';
 // import '../../../core/thermal_printer_service.dart';
 import '../../../widgets/main_layout.dart';
+import '../../../widgets/unified_header.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrinterConfigPage extends ConsumerStatefulWidget {
@@ -179,11 +180,8 @@ class _PrinterConfigPageState extends ConsumerState<PrinterConfigPage> {
 
     return MainLayout(
       currentRoute: '/printer-config',
-      appBar: AppBar(
-        title: const Text('Configuration des Imprimantes'),
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
-        elevation: 0,
+      appBar: UnifiedHeader(
+        title: 'Configuration des Imprimantes',
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

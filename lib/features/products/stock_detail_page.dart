@@ -7,7 +7,7 @@ import 'package:forui/forui.dart';
 import '../../providers/product_provider.dart';
 import '../../models/product.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 
 class StockDetailPage extends ConsumerStatefulWidget {
   final Product product;
@@ -44,12 +44,15 @@ class _StockDetailPageState extends ConsumerState<StockDetailPage> {
 
     return MainLayout(
       currentRoute: '/inventory',
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Gestion du Stock'),
+      appBar: UnifiedHeader(
+        title: 'Gestion du Stock',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Retour',
+          ),
+        ],
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

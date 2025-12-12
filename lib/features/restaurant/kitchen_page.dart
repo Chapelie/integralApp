@@ -10,7 +10,7 @@ import '../../models/product.dart';
 import '../../providers/kitchen_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 import '../../core/responsive_helper.dart';
 
 class KitchenPage extends ConsumerWidget {
@@ -23,15 +23,14 @@ class KitchenPage extends ConsumerWidget {
 
     return MainLayout(
       currentRoute: '/kitchen',
-      appBar: MobileHeader(
+      appBar: UnifiedHeader(
         title: 'Cuisine',
-        actions: [
-          IconButton(
-            onPressed: () => ref.refresh(activeKitchenOrdersProvider),
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Rafraîchir',
-          ),
-        ],
+        onRefresh: () async {
+          // Force refresh of kitchen orders
+          await ref.read(kitchenOrderListProvider.notifier).refresh(forceRefresh: true);
+          // Invalidate active orders provider to force refresh
+          ref.invalidate(activeKitchenOrdersProvider);
+        },
       ),
       child: ordersAsync.when(
         data: (orders) {

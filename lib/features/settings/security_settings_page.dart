@@ -7,6 +7,8 @@ import 'package:forui/forui.dart';
 import '../../core/pin_service.dart';
 import '../../core/constants.dart';
 import '../auth/pin_screen.dart';
+import '../../widgets/unified_header.dart';
+import '../../widgets/main_layout.dart';
 
 class SecuritySettingsPage extends ConsumerStatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -81,10 +83,70 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
     );
 
     if (verified == true) {
-      // Disable PIN by setting it to empty
-      await _pinService.setPin('');
+      // Disable PIN properly
+      final currentPin = await _getCurrentPinForDisable();
+      if (currentPin != null) {
+        final success = await _pinService.disablePin(currentPin);
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Code PIN désactivé avec succès'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur lors de la désactivation du PIN'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
       _checkPinStatus();
     }
+  }
+
+  Future<String?> _getCurrentPinForDisable() async {
+    // Show dialog to get current PIN for disabling
+    final pinController = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Désactiver le code PIN'),
+        content: TextField(
+          controller: pinController,
+          keyboardType: TextInputType.number,
+          obscureText: true,
+          maxLength: AppConstants.pinLength,
+          decoration: const InputDecoration(
+            labelText: 'Entrez votre code PIN actuel',
+            counterText: '',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (pinController.text.length == AppConstants.pinLength) {
+                Navigator.of(context).pop(pinController.text);
+              }
+            },
+            child: const Text('Valider'),
+          ),
+        ],
+      ),
+    );
+    pinController.dispose();
+    return result;
   }
 
   Future<void> _unlockUser() async {
@@ -98,13 +160,12 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
   Widget build(BuildContext context) {
     final theme = FTheme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Paramètres de sécurité'),
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
+    return MainLayout(
+      currentRoute: '/security-settings',
+      appBar: UnifiedHeader(
+        title: 'Paramètres de sécurité',
       ),
-      body: _isLoading
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),

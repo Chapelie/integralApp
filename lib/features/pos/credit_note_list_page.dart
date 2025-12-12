@@ -8,6 +8,7 @@ import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
 import '../../providers/credit_note_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class CreditNoteListPage extends ConsumerWidget {
   const CreditNoteListPage({super.key});
@@ -28,8 +29,8 @@ class CreditNoteListPage extends ConsumerWidget {
 
     return MainLayout(
       currentRoute: '/credit-notes',
-      appBar: AppBar(
-        title: const Text('Gestion des Avoirs'),
+      appBar: UnifiedHeader(
+        title: 'Gestion des Avoirs',
         actions: [
           IconButton(
             onPressed: () => ref.read(creditNoteProvider.notifier).load(forceRefresh: true),

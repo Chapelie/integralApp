@@ -6,7 +6,7 @@ import '../../providers/product_provider.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'product_form_page.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 
 class ProductListPage extends ConsumerStatefulWidget {
   const ProductListPage({super.key});
@@ -58,7 +58,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
 
     return MainLayout(
       currentRoute: '/products',
-      appBar: MobileHeader(
+      appBar: UnifiedHeader(
         title: 'Produits',
         actions: [
           IconButton(

@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/reports_service.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 
 class AccountingPage extends ConsumerStatefulWidget {
   const AccountingPage({super.key});
@@ -125,7 +125,11 @@ class _AccountingPageState extends ConsumerState<AccountingPage> {
 
     return MainLayout(
       currentRoute: '/accounting',
-      appBar: const MobileHeader(title: 'Comptabilisation'),
+      appBar: UnifiedHeader(
+        title: 'Comptabilisation',
+        onFilter: _selectDateRange,
+        onRefresh: _loadAccountingStats,
+      ),
       child: _buildContent(theme),
     );
   }

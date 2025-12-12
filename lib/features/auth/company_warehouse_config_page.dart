@@ -10,6 +10,7 @@ import '../../models/company.dart';
 import '../../models/warehouse.dart';
 import '../../providers/cash_register_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class CompanyWarehouseConfigPage extends ConsumerStatefulWidget {
   const CompanyWarehouseConfigPage({super.key});
@@ -179,11 +180,9 @@ class _CompanyWarehouseConfigPageState extends ConsumerState<CompanyWarehouseCon
     final theme = FTheme.of(context);
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Configuration'),
-          backgroundColor: theme.colors.primary,
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false, // Empêcher le retour
+        appBar: UnifiedHeader(
+          title: 'Configuration',
+          color: theme.colors.primary,
         ),
         body: _isLoading
             ? const Center(

@@ -5,6 +5,7 @@ import 'package:forui/forui.dart';
 import '../../models/employee.dart';
 import '../../providers/employee_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class EmployeeFormPage extends ConsumerStatefulWidget {
   final Employee? employee; // Optional: for editing existing employee
@@ -97,8 +98,8 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
 
     return MainLayout(
       currentRoute: '/employees',
-      appBar: AppBar(
-        title: Text(isEditing ? 'Modifier l\'employé' : 'Nouvel employé'),
+      appBar: UnifiedHeader(
+        title: isEditing ? 'Modifier l\'employé' : 'Nouvel employé',
         actions: [
           if (_isLoading)
             const Padding(

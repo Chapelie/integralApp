@@ -18,6 +18,7 @@ import '../../core/receipt_service.dart';
 import '../../core/beep_service.dart';
 import '../../core/device_service.dart';
 import '../../core/credit_note_service.dart';
+import '../../widgets/unified_header.dart';
 import '../../widgets/pdf_preview_page.dart';
 
 enum PaymentMethod {
@@ -85,12 +86,15 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     final cartState = ref.watch(cartProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Paiement'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: UnifiedHeader(
+        title: 'Paiement',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Retour',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

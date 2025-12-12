@@ -9,6 +9,7 @@ import '../../models/category.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 import '../../core/image_service.dart';
 
 class ProductFormPage extends ConsumerStatefulWidget {
@@ -266,8 +267,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
     return MainLayout(
       currentRoute: '/product-form',
-      appBar: AppBar(
-        title: Text(isEditing ? 'Modifier le produit' : 'Nouveau produit'),
+      appBar: UnifiedHeader(
+        title: isEditing ? 'Modifier le produit' : 'Nouveau produit',
         actions: [
           if (_isLoading)
             const Padding(

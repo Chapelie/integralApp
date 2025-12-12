@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import '../../providers/product_provider.dart';
-import '../../providers/category_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 import '../../core/responsive_helper.dart';
 import 'stock_management_page.dart';
 import 'categories_page.dart';
@@ -60,11 +60,16 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     return MainLayout(
       currentRoute: '/products',
-      appBar: AppBar(
-        title: const Text('Gestion des Produits'),
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
-        elevation: 0,
+      appBar: UnifiedHeader(
+        title: 'Gestion des Produits',
+        showSearch: true,
+        searchHint: 'Rechercher un produit...',
+        onSearch: (value) {
+          ref.read(productProvider.notifier).searchProducts(value);
+        },
+        onRefresh: () {
+          ref.read(productProvider.notifier).loadProducts();
+        },
         actions: [
           IconButton(
             onPressed: () {

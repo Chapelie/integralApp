@@ -12,7 +12,7 @@ import 'security_settings_page.dart';
 import 'simple_connection_test.dart';
 import 'debug_auth_page.dart';
 import '../settings/tax_settings_page.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -25,7 +25,7 @@ class SettingsPage extends ConsumerWidget {
 
     return MainLayout(
       currentRoute: '/settings',
-      appBar: const MobileHeader(title: 'Paramètres'),
+      appBar: UnifiedHeader(title: 'Paramètres'),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

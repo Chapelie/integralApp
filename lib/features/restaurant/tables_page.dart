@@ -9,21 +9,48 @@ import '../../models/table.dart';
 import '../../providers/table_provider.dart';
 import '../../providers/waiter_provider.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 import 'table_form_dialog.dart';
 
-class TablesPage extends ConsumerWidget {
+class TablesPage extends ConsumerStatefulWidget {
   const TablesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TablesPage> createState() => _TablesPageState();
+}
+
+class _TablesPageState extends ConsumerState<TablesPage> {
+  String _searchQuery = '';
+
+  List<RestaurantTable> _filterTables(List<RestaurantTable> tables) {
+    if (_searchQuery.isEmpty) return tables;
+    final query = _searchQuery.toLowerCase();
+    return tables.where((table) {
+      return table.number.toString().contains(query) ||
+          (table.waiterName?.toLowerCase().contains(query) ?? false) ||
+          table.status.label.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tablesAsync = ref.watch(tableListProvider);
     final theme = FTheme.of(context);
 
     return MainLayout(
       currentRoute: '/tables',
-      appBar: MobileHeader(
+      appBar: UnifiedHeader(
         title: 'Gestion des Tables',
+        showSearch: true,
+        searchHint: 'Rechercher une table...',
+        onSearch: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        onRefresh: () {
+          ref.refresh(tableListProvider);
+        },
         actions: [
           FButton(
             onPress: () => _showTableForm(context, ref),
@@ -34,10 +61,33 @@ class TablesPage extends ConsumerWidget {
       ),
       child: tablesAsync.when(
         data: (tables) {
-          if (tables.isEmpty) {
+          final filteredTables = _filterTables(tables);
+          if (filteredTables.isEmpty && tables.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off, size: 64, color: theme.colors.mutedForeground),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucun résultat',
+                    style: theme.typography.lg,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aucune table ne correspond à votre recherche',
+                    style: theme.typography.sm.copyWith(
+                      color: theme.colors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          if (filteredTables.isEmpty) {
             return _buildEmptyState(context, ref, theme);
           }
-          return _buildTablesGrid(context, ref, tables, theme);
+          return _buildTablesGrid(context, ref, filteredTables, theme);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(

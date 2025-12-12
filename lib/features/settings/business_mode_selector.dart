@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import '../../providers/business_config_provider.dart';
+import '../../widgets/unified_header.dart';
 
 class BusinessModeSelector extends ConsumerWidget {
   const BusinessModeSelector({super.key});
@@ -41,10 +42,9 @@ class BusinessModeSelector extends ConsumerWidget {
     return Semantics(
       label: 'Page sélection type de commerce',
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Type de commerce'),
-          backgroundColor: FTheme.of(context).colors.primary,
-          foregroundColor: Colors.white,
+        appBar: UnifiedHeader(
+          title: 'Type de commerce',
+          color: FTheme.of(context).colors.primary,
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {

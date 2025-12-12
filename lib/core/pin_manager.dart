@@ -348,8 +348,8 @@ class _PinDialogState extends State<_PinDialog> {
               }
             },
             style: FButtonStyle.primary(),
-          },
-          child: const Text('Valider'),
+            child: const Text('Valider'),
+          ),
         ),
       ],
     );

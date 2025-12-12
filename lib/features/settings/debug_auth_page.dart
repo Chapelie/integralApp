@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import '../../core/api_service.dart';
 import '../../core/constants.dart';
 import '../../core/responsive_helper.dart';
+import '../../widgets/unified_header.dart';
 
 /// Page de débogage pour tester l'authentification
 class DebugAuthPage extends ConsumerStatefulWidget {
@@ -93,11 +94,9 @@ class _DebugAuthPageState extends ConsumerState<DebugAuthPage> {
 
     return FScaffold(
       child: Scaffold(
-        appBar: AppBar(
-        title: const Text('Debug Authentification'),
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
-      ),
+        appBar: UnifiedHeader(
+          title: 'Debug Authentification',
+        ),
       body: Padding(
         padding: EdgeInsets.all(Responsive.spacing(context, multiplier: 4)),
         child: Column(

@@ -21,7 +21,7 @@ import '../../models/product.dart';
 import '../../models/customer.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/main_layout.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 import '../../widgets/pdf_preview_page.dart';
 import '../../core/responsive_helper.dart';
 import '../pos/pos_page.dart';
@@ -112,58 +112,50 @@ class _ReceiptsPageState extends ConsumerState<ReceiptsPage> {
 
     return MainLayout(
       currentRoute: '/receipts',
-      appBar: const MobileHeader(title: 'Reçus'),
+      appBar: UnifiedHeader(
+        title: 'Reçus',
+        showSearch: true,
+        searchHint: 'ID vente, client, produit...',
+        onSearch: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        onFilter: () {
+          _selectDateRange(context);
+        },
+      ),
       child: Column(
         children: [
-          // Barre de recherche et filtres
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                FTextField(
-                  controller: _searchController,
-                  label: const Text('Rechercher'),
-                  hint: 'ID vente, client, produit...',
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FButton(
-                        onPress: () => _selectDateRange(context),
-                        style: FButtonStyle.outline(),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.date_range, size: 16),
-                            const SizedBox(width: 8),
-                            Text(
-                              _startDate != null && _endDate != null
-                                  ? '${DateFormat('dd/MM/yyyy').format(_startDate!)} - ${DateFormat('dd/MM/yyyy').format(_endDate!)}'
-                                  : 'Période',
-                            ),
-                          ],
-                        ),
-                      ),
+          // Filtres de date (si nécessaire) - affichés sous forme de chips
+          if (_startDate != null || _endDate != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  if (_startDate != null)
+                    Chip(
+                      label: Text('Du: ${DateFormat('dd/MM/yyyy').format(_startDate!)}'),
+                      onDeleted: () {
+                        setState(() {
+                          _startDate = null;
+                        });
+                      },
                     ),
-                    if (_startDate != null || _endDate != null) ...[
-                      const SizedBox(width: 8),
-                      FButton(
-                        onPress: () {
-                          setState(() {
-                            _startDate = null;
-                            _endDate = null;
-                          });
-                        },
-                        style: FButtonStyle.outline(),
-                        child: const Icon(Icons.clear, size: 16),
-                      ),
-                    ],
+                  if (_endDate != null) ...[
+                    const SizedBox(width: 8),
+                    Chip(
+                      label: Text('Au: ${DateFormat('dd/MM/yyyy').format(_endDate!)}'),
+                      onDeleted: () {
+                        setState(() {
+                          _endDate = null;
+                        });
+                      },
+                    ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
           // Liste des ventes
           Expanded(

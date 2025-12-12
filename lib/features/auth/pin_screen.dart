@@ -33,6 +33,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   final TextEditingController _confirmPinController = TextEditingController();
   
   String _enteredPin = '';
+  String _firstPin = ''; // Pour la confirmation lors de la configuration
   String _errorMessage = '';
   bool _isLoading = false;
   bool _isLocked = false;
@@ -117,33 +118,40 @@ class _PinScreenState extends ConsumerState<PinScreen> {
 
   Future<void> _setupPin() async {
     // Pour la configuration, on demande confirmation
-    if (_pinController.text.isEmpty) {
-      _pinController.text = _enteredPin;
+    if (_firstPin.isEmpty) {
+      // Première saisie du PIN
       setState(() {
+        _firstPin = _enteredPin;
         _enteredPin = '';
+        _errorMessage = '';
         _isLoading = false;
       });
       return;
     }
 
-    if (_pinController.text != _enteredPin) {
+    // Vérification de la confirmation
+    if (_firstPin != _enteredPin) {
       setState(() {
         _errorMessage = 'Les codes PIN ne correspondent pas';
         _enteredPin = '';
-        _pinController.clear();
+        _firstPin = '';
         _isLoading = false;
       });
       return;
     }
 
-    final success = await _pinService.setPin(_enteredPin);
+    // Les deux PIN correspondent, on peut le définir
+    final success = await _pinService.setPin(_firstPin);
     if (success) {
-      widget.onSuccess?.call();
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        widget.onSuccess?.call();
+      }
     } else {
       setState(() {
         _errorMessage = 'Erreur lors de la configuration du PIN';
         _enteredPin = '';
-        _pinController.clear();
+        _firstPin = '';
         _isLoading = false;
       });
     }
@@ -152,7 +160,10 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   Future<void> _verifyPin() async {
     final success = await _pinService.verifyPin(_enteredPin);
     if (success) {
-      widget.onSuccess?.call();
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        widget.onSuccess?.call();
+      }
     } else {
       await _checkLockStatus();
       setState(() {
@@ -311,24 +322,42 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   Widget _buildPinDisplay(FThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(AppConstants.pinLength, (index) {
-        final isFilled = index < _enteredPin.length;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isFilled ? theme.colors.primary : theme.colors.muted,
-            border: Border.all(
-              color: theme.colors.border,
-              width: 1,
+    final displayPin = widget.isSetup && _firstPin.isNotEmpty ? _firstPin : _enteredPin;
+    final pinLength = widget.isSetup && _firstPin.isNotEmpty 
+        ? _firstPin.length + _enteredPin.length 
+        : _enteredPin.length;
+    
+    return Column(
+      children: [
+        if (widget.isSetup && _firstPin.isNotEmpty) ...[
+          Text(
+            'Confirmez votre code PIN',
+            style: theme.typography.sm.copyWith(
+              color: theme.colors.mutedForeground,
             ),
           ),
-        );
-      }),
+          const SizedBox(height: 8),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(AppConstants.pinLength, (index) {
+            final isFilled = index < (widget.isSetup && _firstPin.isNotEmpty ? _enteredPin.length : _enteredPin.length);
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isFilled ? theme.colors.primary : theme.colors.muted,
+                border: Border.all(
+                  color: theme.colors.border,
+                  width: 1,
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 

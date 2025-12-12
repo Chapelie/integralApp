@@ -8,6 +8,8 @@ import '../../core/responsive_helper.dart';
 import '../../core/storage_service.dart';
 import '../../core/device_service.dart';
 import '../../core/beep_service.dart';
+import '../../widgets/unified_header.dart';
+import '../../widgets/main_layout.dart';
 
 /// Page d'ouverture de caisse
 ///
@@ -219,11 +221,11 @@ class _OpenRegisterPageState extends ConsumerState<OpenRegisterPage> {
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ouverture de caisse'),
-        backgroundColor: FTheme.of(context).colors.primary,
-        foregroundColor: Colors.white,
+    return MainLayout(
+      currentRoute: '/open-register',
+      appBar: UnifiedHeader(
+        title: 'Ouverture de caisse',
+        color: FTheme.of(context).colors.primary,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -234,7 +236,7 @@ class _OpenRegisterPageState extends ConsumerState<OpenRegisterPage> {
           ),
         ],
       ),
-      body: Center(
+      child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: ConstrainedBox(

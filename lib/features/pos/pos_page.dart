@@ -11,13 +11,12 @@ import '../../core/cash_register_service.dart';
 import '../../core/beep_service.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/price_input_dialog.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 import '../restaurant/widgets/restaurant_order_info.dart';
 import '../cash_register/force_open_register_dialog.dart';
 import 'widgets/products_grid.dart';
 import 'widgets/order_panel.dart';
 import 'widgets/order_panel_compact.dart';
-import 'widgets/topbar.dart';
 
 class PosPage extends ConsumerStatefulWidget {
   const PosPage({super.key});
@@ -80,7 +79,15 @@ class _PosPageState extends ConsumerState<PosPage> {
 
     return MainLayout(
       currentRoute: _currentRoute,
-      appBar: isDesktop ? const TopBar() : const MobileHeader(title: 'Point de vente'),
+      appBar: UnifiedHeader(
+        title: 'Point de vente',
+        showSearch: true,
+        showSyncStatus: true,
+        showNetworkIndicator: true,
+        showUserAvatar: isDesktop,
+        showSettings: isDesktop,
+        searchHint: 'Rechercher des produits...',
+      ),
       floatingActionButton: !isDesktop && cartState.items.isNotEmpty
           ? _buildCartFab(context, cartState, theme)
           : null,

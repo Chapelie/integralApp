@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../widgets/unified_header.dart';
 
 class TaxSettingsPage extends ConsumerStatefulWidget {
   const TaxSettingsPage({super.key});
@@ -37,10 +38,8 @@ class _TaxSettingsPageState extends ConsumerState<TaxSettingsPage> {
 
     return MainLayout(
       currentRoute: '/tax-settings',
-      appBar: AppBar(
-        title: const Text('Configuration des Taxes'),
-        backgroundColor: theme.colors.background,
-        foregroundColor: theme.colors.foreground,
+      appBar: UnifiedHeader(
+        title: 'Configuration des Taxes',
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

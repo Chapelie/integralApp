@@ -5,7 +5,7 @@ import '../../providers/cash_register_provider.dart';
 import '../../providers/sidebar_provider.dart';
 import '../../widgets/main_layout.dart';
 import '../../core/responsive_helper.dart';
-import '../../widgets/mobile_header.dart';
+import '../../widgets/unified_header.dart';
 
 class CashRegisterPage extends ConsumerStatefulWidget {
   const CashRegisterPage({super.key});
@@ -38,7 +38,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     if (cashRegisterState.isLoading) {
       return MainLayout(
         currentRoute: _currentRoute,
-        appBar: const MobileHeader(title: 'Caisse'),
+        appBar: UnifiedHeader(title: 'Caisse'),
         child: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -46,7 +46,7 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
     if (cashRegisterState.error != null) {
       return MainLayout(
         currentRoute: _currentRoute,
-        appBar: const MobileHeader(title: 'Caisse'),
+        appBar: UnifiedHeader(title: 'Caisse'),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -87,44 +87,13 @@ class _CashRegisterPageState extends ConsumerState<CashRegisterPage> {
 
     return MainLayout(
       currentRoute: _currentRoute,
-      appBar: const MobileHeader(title: 'Caisse'),
-      child: _buildCashRegisterContent(context, cashRegisterState, theme),
-    );
-  }
-
-  Widget _buildCashRegisterContent(BuildContext context, dynamic cashRegisterState, FThemeData theme) {
-    return Column(
-      children: [
-        // Header avec boutons d'action
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colors.background,
-            border: Border(
-              bottom: BorderSide(
-                color: theme.colors.border,
-                width: 1,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                onPressed: () {
-                  ref.read(cashRegisterProvider.notifier).refreshRegisterState();
-                },
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Actualiser l\'état',
-              ),
-            ],
-          ),
-        ),
-        // Contenu de la page
-        Expanded(
-          child: _buildRegisterContent(context, cashRegisterState, theme),
-        ),
-      ],
+      appBar: UnifiedHeader(
+        title: 'Caisse',
+        onRefresh: () {
+          ref.read(cashRegisterProvider.notifier).refreshRegisterState();
+        },
+      ),
+      child: _buildRegisterContent(context, cashRegisterState, theme),
     );
   }
 

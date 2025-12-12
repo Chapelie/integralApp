@@ -7,6 +7,8 @@ import 'package:forui/forui.dart';
 
 import '../../core/device_registration_service.dart';
 import '../../core/device_service.dart';
+import '../../widgets/unified_header.dart';
+import '../../widgets/main_layout.dart';
 
 class DeviceRegistrationDebugPage extends ConsumerStatefulWidget {
   const DeviceRegistrationDebugPage({super.key});
@@ -182,13 +184,13 @@ class _DeviceRegistrationDebugPageState extends ConsumerState<DeviceRegistration
   Widget build(BuildContext context) {
     final theme = FTheme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Debug - Enregistrement Device'),
-        backgroundColor: theme.colors.primary,
-        foregroundColor: Colors.white,
+    return MainLayout(
+      currentRoute: '/device-debug',
+      appBar: UnifiedHeader(
+        title: 'Debug - Enregistrement Device',
+        color: theme.colors.primary,
       ),
-      body: _isLoading
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),

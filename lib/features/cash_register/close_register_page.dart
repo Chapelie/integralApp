@@ -9,6 +9,8 @@ import '../../core/beep_service.dart';
 import '../auth/login_page.dart';
 import '../auth/pin_screen.dart';
 import 'widgets/register_summary.dart';
+import '../../widgets/unified_header.dart';
+import '../../widgets/main_layout.dart';
 
 /// Page de fermeture de caisse
 ///
@@ -168,19 +170,22 @@ class _CloseRegisterPageState extends ConsumerState<CloseRegisterPage> {
         ? _calculateDifference(expectedCash, actualCash)
         : 0.0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fermeture de caisse'),
-        backgroundColor: FTheme.of(context).colors.primary,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
+    return MainLayout(
+      currentRoute: '/close-register',
+      appBar: UnifiedHeader(
+        title: 'Fermeture de caisse',
+        color: FTheme.of(context).colors.primary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            tooltip: 'Retour',
+          ),
+        ],
       ),
-      body: Center(
+      child: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(Responsive.spacing(context, multiplier: 4)),
           child: ConstrainedBox(
